@@ -44,6 +44,15 @@ class SwitchTrack extends Action {
         let box = new Oui.VerticalBox();
         box.setPadding(0, 0, 0, 0);
 
+        {
+            let info = new Oui.Widgets.Label("Switches the track elements at the location");
+            box.addChild(info);
+        }
+        {
+            let info = new Oui.Widgets.Label("when triggered.");
+            box.addChild(info);
+        }
+
         this.isValid();
         let statusLabel = new Oui.Widgets.Label(this.validationMessage);
 

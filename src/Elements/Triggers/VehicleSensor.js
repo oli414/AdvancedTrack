@@ -74,6 +74,15 @@ class VehicleSensor extends Trigger {
         let box = new Oui.VerticalBox();
         box.setPadding(0, 0, 0, 0);
 
+        {
+            let info = new Oui.Widgets.Label("Triggers when the last car of a train has cleared the");
+            box.addChild(info);
+        }
+        {
+            let info = new Oui.Widgets.Label("selected tile.");
+            box.addChild(info);
+        }
+
         this.isValid();
         let statusLabel = new Oui.Widgets.Label(this.validationMessage);
 

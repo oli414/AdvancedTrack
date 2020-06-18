@@ -3161,6 +3161,15 @@ var VehicleSensor = function (_Trigger) {
             var box = new Oui.VerticalBox();
             box.setPadding(0, 0, 0, 0);
 
+            {
+                var info = new Oui.Widgets.Label("Triggers when the last car of a train has cleared the");
+                box.addChild(info);
+            }
+            {
+                var _info = new Oui.Widgets.Label("selected tile.");
+                box.addChild(_info);
+            }
+
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
@@ -3271,6 +3280,15 @@ var SwitchTrack = function (_Action) {
 
             var box = new Oui.VerticalBox();
             box.setPadding(0, 0, 0, 0);
+
+            {
+                var info = new Oui.Widgets.Label("Switches the track elements at the location");
+                box.addChild(info);
+            }
+            {
+                var _info2 = new Oui.Widgets.Label("when triggered.");
+                box.addChild(_info2);
+            }
 
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
