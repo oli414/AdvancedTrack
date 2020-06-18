@@ -1,4 +1,4 @@
-**Please Note:** Changes made with AdvancedTrack are saved automatically. The save data is tied to the park name and **not** the park save file. Make sure to use a unique park name to prevent conflicts.
+**Please Note:** Changes made with AdvancedTrack are saved automatically. The save data is tied to the park name and **not** the park save file. Make sure to use a unique park name to prevent conflicts. This will be improved when the new save file format is released.
 
 # Advanced Track
 Advanced Track is a plugin that allows users to setup more advanced logic based track features.
