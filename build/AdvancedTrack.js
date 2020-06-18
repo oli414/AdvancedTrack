@@ -3688,7 +3688,7 @@ var AdvancedTrackWindow = function () {
             this.window._x = this.window._handle.x;
             this.window._y = this.window._handle.y;
             this.editWindow.window._x = this.window._x + this.window.getPixelWidth() / 2 - this.editWindow.window.getPixelWidth() / 2;
-            this.editWindow.window._y = this.window._y + this.window.getPixelHeight() / 2 - this.editWindow.window.getPixelHeight() / 2;
+            this.editWindow.window._y = this.window._y;
             this.editWindow.window._openAtPosition = true;
 
             this.window._handle.close();
