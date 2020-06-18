@@ -1,6 +1,6 @@
 import Oui from "./OliUI";
-import TrainSensor from "./TrainSensor";
-import SensorSwitchWindow from "./SensorSwitchWindow";
+import Element from "./Elements/Element";
+import EditElementWindow from "./EditElementWindow";
 
 class AdvancedTrackWindow {
     constructor(advancedTrackManager) {
@@ -20,9 +20,9 @@ class AdvancedTrackWindow {
         // Update listview.
 
         this.listView._items = [];
-        for (let i = 0; i < this.advancedTrackManager.sensors.length; i++) {
-            let sensor = this.advancedTrackManager.sensors[i];
-            this.listView._items.push(this.getRowFromItem(sensor, i));
+        for (let i = 0; i < this.advancedTrackManager.elements.length; i++) {
+            let element = this.advancedTrackManager.elements[i];
+            this.listView._items.push(this.getRowFromItem(element, i));
         }
 
         this.window.open();
@@ -31,47 +31,77 @@ class AdvancedTrackWindow {
     createWindow() {
         const that = this;
 
+        let infoRight = null;
+
         let window = new Oui.Window("advanced-track-main", "Advanced Track");
+        window.setColors(26, 24);
         window._paddingBottom = 14;
+        window._paddingTop = 16 + 6;
         window._paddingLeft = 6;
         window._paddingRight = 6;
         window.setWidth(400);
         window.setHorizontalResize(true, 300, 600);
         window.setHeight(200);
         window.setVerticalResize(true, 200, 600);
+        window.setOnClose(() => {
+            infoRight.setIsDisabled(true);
+        });
 
-        let label = new Oui.Widgets.Label("Advanced Track Elements");
-        window.addChild(label);
+        {
+            let label = new Oui.Widgets.Label("Advanced Track save data is linked to the park name, NOT to the save file");
+            window.addChild(label);
+        }
+        {
+            let label = new Oui.Widgets.Label("Changes are saved automatically upon making changes. Use with care.");
+            label._marginBottom = 8;
+            window.addChild(label);
+        }
 
         let listView = new Oui.Widgets.ListView();
         this.listView = listView;
         listView.setCanSelect(true);
         listView.setColumns([
             "ID",
-            "Type",
-            "Ride",
-            "Location",
-            "Valid"
+            "Valid",
+            "Trigger",
+            "Action",
+            "Ride"
         ]);
-        listView.getColumns()[0].setWidth(20);
+        listView.getColumns()[0].setMinWidth(16);
+        listView.getColumns()[0].setRatioWidth(16);
+        listView.getColumns()[1].setMinWidth(16);
+        listView.getColumns()[1].setRatioWidth(30);
+        listView.getColumns()[2].setMinWidth(42);
+        listView.getColumns()[2].setRatioWidth(60);
+        listView.getColumns()[3].setMinWidth(42);
+        listView.getColumns()[3].setRatioWidth(60);
+        listView.getColumns()[4].setRatioWidth(200);
         window.addChild(listView);
         window.setRemainingHeightFiller(listView);
 
         let infoBar = new Oui.HorizontalBox();
         infoBar.setRelativeWidth(100);
-        infoBar.setHeight(50);
+        infoBar.setHeight(54);
+        infoBar._marginBottom = 8;
+        infoBar._paddingLeft = 0;
+        infoBar._paddingRight = 0;
         window.addChild(infoBar);
+
 
         /*
         let viewport = new Oui.Widgets.ViewportWidget();
-        viewport.setRelativeWidth(50);
-        viewport.setHeight(100);
+        viewport.setWidth(160);
+        viewport.setRelativeHeight(100);
         infoBar.addChild(viewport);*/
 
-        let infoRight = new Oui.GroupBox("Element");
+        infoRight = new Oui.GroupBox("Element");
         infoRight.setRelativeHeight(100);
         infoBar.addChild(infoRight);
         infoBar.setRemainingWidthFiller(infoRight);
+
+        let infoRightLabel = new Oui.Widgets.Label("");
+        infoRight.addChild(infoRightLabel);
+        infoRight.setRemainingHeightFiller(infoRightLabel);
 
         let editButton = new Oui.Widgets.Button("Edit", () => {
             that.openEditWindow(that.selectedItem);
@@ -79,7 +109,14 @@ class AdvancedTrackWindow {
         infoRight.addChild(editButton);
 
         let deleteButton = new Oui.Widgets.Button("Delete", () => {
+            that.advancedTrackManager.deleteElement(that.selectedItem);
             infoRight.setIsDisabled(true);
+
+            that.window._x = that.window._handle.x;
+            that.window._y = that.window._handle.y;
+            that.window._handle.close();
+            that.window._openAtPosition = true;
+            that.open();
         });
         infoRight.addChild(deleteButton);
 
@@ -87,9 +124,9 @@ class AdvancedTrackWindow {
 
 
         listView.setOnClick((row, column) => {
-            let sensor = that.advancedTrackManager.sensors[row];
-            that.selectedItem = sensor;
-            //viewport.setView(sensor.x, sensor.y);
+            let element = that.advancedTrackManager.elements[row];
+            that.selectedItem = element;
+            //viewport.setView(element.x, element.y);
             infoRight.setIsDisabled(false);
         });
 
@@ -100,19 +137,14 @@ class AdvancedTrackWindow {
         bottom.addChild(filler);
         bottom.setRemainingWidthFiller(filler);
 
-
-        let elementTypes = new Oui.Widgets.Dropdown([
-            "Vehicle Sensor"
-        ], (index) => {
+        let elementTypes = new Oui.Widgets.Dropdown(Element.TriggerTypeNames, (index) => {
             this.selectedTriggerType = index;
         })
         elementTypes.setWidth(100);
         elementTypes.setHeight(13);
         bottom.addChild(elementTypes);
 
-        let elementReactionTypes = new Oui.Widgets.Dropdown([
-            "Track Switch"
-        ], (index) => {
+        let elementReactionTypes = new Oui.Widgets.Dropdown(Element.ActionTypeNames, (index) => {
             this.selectedReactionType = index;
         })
         elementReactionTypes.setWidth(100);
@@ -120,10 +152,8 @@ class AdvancedTrackWindow {
         bottom.addChild(elementReactionTypes);
 
         let addButton = new Oui.Widgets.Button("Create New", () => {
-            let newSensor = new TrainSensor(-1, -1, -1, null);
-            that.advancedTrackManager.sensors.push(newSensor);
-
-            that.openEditWindow(newSensor);
+            let newElement = new Element(that.advancedTrackManager, that.selectedTriggerType, that.selectedReactionType);
+            that.openEditWindow(newElement);
         });
         addButton.setHeight(13);
         addButton.setWidth(100);
@@ -133,6 +163,14 @@ class AdvancedTrackWindow {
     }
 
     openEditWindow(item) {
+        this.editWindow = new EditElementWindow(this, item);
+
+        this.window._x = this.window._handle.x;
+        this.window._y = this.window._handle.y;
+        this.editWindow.window._x = this.window._x + this.window.getPixelWidth() / 2 - this.editWindow.window.getPixelWidth() / 2;
+        this.editWindow.window._y = this.window._y + this.window.getPixelHeight() / 2 - this.editWindow.window.getPixelHeight() / 2;
+        this.editWindow.window._openAtPosition = true;
+
         this.window._handle.close();
         if (this.editWindow != null) {
             if (this.editWindow._handle) {
@@ -140,28 +178,16 @@ class AdvancedTrackWindow {
             }
         }
 
-        this.editWindow = new SensorSwitchWindow(item);
         this.editWindow.window.open();
     }
 
     getRowFromItem(item, i) {
-        let ride = map.getRide(item.rideId);
-        if (ride == null) {
-            return [
-                i + "",
-                "Sensor Switch",
-                "Ride not found",
-                item.x + ", " + item.y,
-                "False"
-            ];
-        }
-
         return [
             i + "",
-            "Sensor Switch",
-            ride.name,
-            item.x + ", " + item.y,
-            item.isValid() ? "True" : "False"
+            item.isValid() ? "Y" : "N",
+            Element.TriggerTypeNames[item.triggerType],
+            Element.ActionTypeNames[item.actionType],
+            item.getTitle()
         ];
     }
 }

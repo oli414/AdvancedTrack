@@ -10,187 +10,118 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var MapHelper = function () {
-    function MapHelper() {
-        _classCallCheck(this, MapHelper);
+var LocationPrompt = function () {
+    function LocationPrompt() {
+        var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "location-prompt";
+
+        _classCallCheck(this, LocationPrompt);
+
+        this.id = id;
+        this.cursor = "cross_hair";
+        this.onFinish = null;
+        this.onCancelled = null;
+
+        this.selectedCoords = { x: 0, y: 0 };
     }
 
-    _createClass(MapHelper, null, [{
-        key: "InsertTileElement",
-        value: function InsertTileElement(tile, height) {
-            var index = MapHelper.FindPlacementPosition(tile, height);
-            var element = tile.insertElement(index);
-            element._index = index;
-            element.baseHeight = height;
-            return element;
+    _createClass(LocationPrompt, [{
+        key: "setSelectionRange",
+        value: function setSelectionRange(start, end) {
+            var left = Math.min(start.x, end.x);
+            var right = Math.max(start.x, end.x);
+            var top = Math.min(start.y, end.y);
+            var bottom = Math.max(start.y, end.y);
+            ui.tileSelection.range = {
+                leftTop: { x: left, y: top },
+                rightBottom: { x: right, y: bottom }
+            };
         }
     }, {
-        key: "FindPlacementPosition",
-        value: function FindPlacementPosition(tile, height) {
-            var index = 0;
-            for (index = 0; index < tile.numElements; index++) {
-                var element = tile.getElement(index);
-                if (element.baseHeight >= height) {
-                    break;
+        key: "prompt",
+        value: function prompt() {
+            var _this = this;
+
+            var onFinish = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+            var onCancelled = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            if (ui.tool && ui.tool.id == this.id) {
+                this.cancel();
+            }
+            this.onFinish = onFinish;
+            this.onCancelled = onCancelled;
+
+            ui.activateTool({
+                id: this.id,
+                cursor: this.cursor,
+                onStart: function onStart(e) {
+                    ui.mainViewport.visibilityFlags |= 1 << 7;
+                },
+                onDown: function onDown(e) {
+                    _this.selectedCoords = e.mapCoords;
+                    _this.setSelectionRange(_this.selectedCoords, _this.selectedCoords);
+                },
+                onMove: function onMove(e) {
+                    _this.selectedCoords = e.mapCoords;
+                    _this.setSelectionRange(_this.selectedCoords, _this.selectedCoords);
+                },
+                onUp: function onUp(e) {
+                    _this.selectedCoords = e.mapCoords;
+                    _this.setSelectionRange(_this.selectedCoords, _this.selectedCoords);
+                    if (_this.onFinish) _this.onFinish(Math.floor(_this.selectedCoords.x / 32), Math.floor(_this.selectedCoords.y / 32));
+                    ui.tileSelection.range = null;
+                    ui.tool.cancel();
+                },
+                onFinish: function onFinish() {
+                    ui.tileSelection.range = null;
+                    ui.mainViewport.visibilityFlags &= ~(1 << 7);
                 }
-            }
-            return index;
+            });
         }
     }, {
-        key: "GetTileSurfaceZ",
-        value: function GetTileSurfaceZ(x, y) {
-            var tile = map.getTile(x, y);
-            if (tile) {
-                for (var i = 0; i < tile.numElements; i++) {
-                    var element = tile.getElement(i);
-                    if (element && element.type == "surface") {
-                        return element.baseHeight;
-                    }
+        key: "cancel",
+        value: function cancel() {
+            if (ui.tool && ui.tool.id == this.id) {
+                if (this.onCancelled) {
+                    this.onCancelled();
                 }
+                ui.tool.cancel();
             }
-            return null;
-        }
-    }, {
-        key: "PlaceSmallScenery",
-        value: function PlaceSmallScenery(tile, objectIndex, height) {
-            var orientation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
-            var element = MapHelper.InsertTileElement(tile, height);
-            element.type = "small_scenery";
-            element.object = objectIndex;
-            element.clearanceHeight = height + 1;
-            return element;
-        }
-    }, {
-        key: "PlaceWall",
-        value: function PlaceWall(tile, objectIndex, height) {
-            var orientation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
-            var element = MapHelper.InsertTileElement(tile, height);
-            element.type = "wall";
-            element.object = objectIndex;
-            element.clearanceHeight = height + 1;
-            return element;
-        }
-    }, {
-        key: "GetElementIndex",
-        value: function GetElementIndex(tile, element) {
-            for (var i = 0; i < tile.numElements; i++) {
-                var elementB = tile.getElement(i);
-                if (elementB && element == elementB) {
-                    return i;
-                }
-            }
-            return null;
-        }
-    }, {
-        key: "SetPrimaryTileColor",
-        value: function SetPrimaryTileColor(tile, elementIndex, color) {
-            var data = tile.data;
-            var typeFieldIndex = 6;
-            data[16 * elementIndex + typeFieldIndex] = color;
-            tile.data = data;
-        }
-    }, {
-        key: "SetFlag",
-        value: function SetFlag(tile, elementIndex, flag, enable) {
-            var data = tile.data;
-            var typeFieldIndex = 1;
-            if (enable) {
-                data[16 * elementIndex + typeFieldIndex] |= flag;
-            } else {
-                data[16 * elementIndex + typeFieldIndex] &= ~flag;
-            }
-            tile.data = data;
-        }
-    }, {
-        key: "GetFlag",
-        value: function GetFlag(tile, elementIndex, flag) {
-            var data = tile.data;
-            var typeFieldIndex = 1;
-            return data[16 * elementIndex + typeFieldIndex] & flag;
-        }
-    }, {
-        key: "SetTileElementRotation",
-        value: function SetTileElementRotation(tile, elementIndex, orientation) {
-            var data = tile.data;
-            var typeFieldIndex = 0;
-            var directionMask = 3;
-            data[16 * elementIndex + typeFieldIndex] &= ~directionMask;
-            data[16 * elementIndex + typeFieldIndex] |= orientation & directionMask;
-            tile.data = data;
-        }
-    }, {
-        key: "GetTileElementRotation",
-        value: function GetTileElementRotation(tile, elementIndex) {
-            var data = tile.data;
-            var typeFieldIndex = 0;
-            var directionMask = 3;
-            return data[16 * elementIndex + typeFieldIndex] & directionMask;
-        }
-    }, {
-        key: "GetTrackElement",
-        value: function GetTrackElement(tile) {
-            for (var i = 0; i < tile.numElements; i++) {
-                var element = tile.getElement(i);
-                if (element.type == "track") {
-                    return element;
-                }
-            }
-            return null;
-        }
-    }, {
-        key: "SwitchTrackElements",
-        value: function SwitchTrackElements(tile) {
-            var firstTrackElement = -1;
-            var secondTrackElement = -1;
-            for (var i = 0; i < tile.numElements; i++) {
-                var element = tile.getElement(i);
-                if (element.type == "track") {
-                    if (firstTrackElement < 0) {
-                        firstTrackElement = i;
-                    } else {
-                        secondTrackElement = i;
-                        break;
-                    }
-                }
-            }
-            if (firstTrackElement < 0 || secondTrackElement < 0) return false;
-
-            var isFinalElement = MapHelper.GetFlag(tile, secondTrackElement, 128);
-
-            var data = tile.data;
-
-            var getDataA = new Uint8Array(16);
-            for (var _i = 0; _i < 16; _i++) {
-                getDataA[_i] = data[firstTrackElement * 16 + _i];
-            }
-            var getDataB = new Uint8Array(16);
-            for (var _i2 = 0; _i2 < 16; _i2++) {
-                getDataB[_i2] = data[secondTrackElement * 16 + _i2];
-            }
-            for (var _i3 = 0; _i3 < 16; _i3++) {
-                data[firstTrackElement * 16 + _i3] = getDataB[_i3];
-                data[secondTrackElement * 16 + _i3] = getDataA[_i3];
-            }
-
-            if (isFinalElement) {
-                // Set last tile element flags
-                for (var _i4 = 0; _i4 < tile.numElements; _i4++) {
-                    data[_i4 * 16 + 1] &= ~128;
-                    if (_i4 == tile.numElements - 1) {
-                        data[_i4 * 16 + 1] |= 128;
-                    }
-                }
-            }
-
-            tile.data = data;
-
-            return true;
         }
     }]);
 
-    return MapHelper;
+    return LocationPrompt;
+}();
+
+var Trigger = function () {
+    function Trigger(element) {
+        _classCallCheck(this, Trigger);
+
+        this.element = element;
+
+        this.validationMessage = "";
+    }
+
+    _createClass(Trigger, [{
+        key: "isValid",
+        value: function isValid() {
+            return true;
+        }
+    }, {
+        key: "test",
+        value: function test(car) {
+            return false;
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {};
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {}
+    }]);
+
+    return Trigger;
 }();
 
 /**
@@ -532,16 +463,16 @@ var Box = function (_Element) {
     function Box() {
         _classCallCheck(this, Box);
 
-        var _this = _possibleConstructorReturn(this, (Box.__proto__ || Object.getPrototypeOf(Box)).call(this));
+        var _this2 = _possibleConstructorReturn(this, (Box.__proto__ || Object.getPrototypeOf(Box)).call(this));
 
-        _this._width = 100;
+        _this2._width = 100;
 
-        _this.setPadding(3, 3, 4, 4);
+        _this2.setPadding(3, 3, 4, 4);
 
-        _this._isHorizontal = false;
+        _this2._isHorizontal = false;
 
-        _this._children = [];
-        return _this;
+        _this2._children = [];
+        return _this2;
     }
 
     /**
@@ -669,11 +600,9 @@ var Box = function (_Element) {
         key: "getTotalChildMarginWidths",
         value: function getTotalChildMarginWidths() {
             var width = 0;
-            for (var i = 0; i < this._children.length; i++) {
+            for (var i = 0; i < this._children.length - 1; i++) {
                 var child = this._children[i];
-                if (i < this._children.length - 1) {
-                    width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
-                }
+                width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
             }
             return width;
         }
@@ -737,10 +666,10 @@ var VerticalBox = function (_Box) {
     function VerticalBox() {
         _classCallCheck(this, VerticalBox);
 
-        var _this2 = _possibleConstructorReturn(this, (VerticalBox.__proto__ || Object.getPrototypeOf(VerticalBox)).call(this));
+        var _this3 = _possibleConstructorReturn(this, (VerticalBox.__proto__ || Object.getPrototypeOf(VerticalBox)).call(this));
 
-        _this2._remainingHeightFiller = null;
-        return _this2;
+        _this3._remainingHeightFiller = null;
+        return _this3;
     }
 
     _createClass(VerticalBox, [{
@@ -832,34 +761,34 @@ var Window = function (_VerticalBox) {
 
         _classCallCheck(this, Window);
 
-        var _this3 = _possibleConstructorReturn(this, (Window.__proto__ || Object.getPrototypeOf(Window)).call(this));
+        var _this4 = _possibleConstructorReturn(this, (Window.__proto__ || Object.getPrototypeOf(Window)).call(this));
 
-        _this3._hasRelativeWidth = false;
-        _this3._width = 100;
+        _this4._hasRelativeWidth = false;
+        _this4._width = 100;
 
-        _this3._height = _this3._paddingTop + _this3._paddingBottom;
+        _this4._height = _this4._paddingTop + _this4._paddingBottom;
 
-        _this3._handle = null;
+        _this4._handle = null;
 
-        _this3._title = title;
-        _this3._classification = classification;
+        _this4._title = title;
+        _this4._classification = classification;
 
-        _this3._canResizeHorizontally = false;
-        _this3._minWidth = 100;
-        _this3._maxWidth = 100;
-        _this3._canResizeVertically = false;
-        _this3._minHeight = 100;
-        _this3._maxHeight = 100;
+        _this4._canResizeHorizontally = false;
+        _this4._minWidth = 100;
+        _this4._maxWidth = 100;
+        _this4._canResizeVertically = false;
+        _this4._minHeight = 100;
+        _this4._maxHeight = 100;
 
-        _this3._titleBarColor = 1;
-        _this3._mainColor = 1;
+        _this4._titleBarColor = 1;
+        _this4._mainColor = 1;
 
-        _this3._requestedRefresh = false;
-        _this3._openAtPosition = false;
+        _this4._requestedRefresh = false;
+        _this4._openAtPosition = false;
 
-        _this3._onUpdate = null;
-        _this3._onClose = null;
-        return _this3;
+        _this4._onUpdate = null;
+        _this4._onClose = null;
+        return _this4;
     }
 
     /**
@@ -1091,7 +1020,7 @@ var Window = function (_VerticalBox) {
     }, {
         key: "_getDescription",
         value: function _getDescription() {
-            var _this4 = this;
+            var _this5 = this;
 
             var widgets = _get(Window.prototype.__proto__ || Object.getPrototypeOf(Window.prototype), "_getDescription", this).call(this);
 
@@ -1107,12 +1036,12 @@ var Window = function (_VerticalBox) {
                 colours: [this._titleBarColor, this._mainColor],
                 widgets: widgets,
                 onUpdate: function onUpdate() {
-                    _this4._update();
-                    if (_this4._onUpdate != null) _this4._onUpdate.call(_this4);
+                    _this5._update();
+                    if (_this5._onUpdate != null) _this5._onUpdate.call(_this5);
                 },
                 onClose: function onClose() {
-                    _this4._handle = null;
-                    if (_this4._onClose != null) _this4._onClose.call(_this4);
+                    _this5._handle = null;
+                    if (_this5._onClose != null) _this5._onClose.call(_this5);
                 }
             };
             if (this._openAtPosition) {
@@ -1191,11 +1120,11 @@ var HorizontalBox = function (_Box2) {
     function HorizontalBox() {
         _classCallCheck(this, HorizontalBox);
 
-        var _this5 = _possibleConstructorReturn(this, (HorizontalBox.__proto__ || Object.getPrototypeOf(HorizontalBox)).call(this));
+        var _this6 = _possibleConstructorReturn(this, (HorizontalBox.__proto__ || Object.getPrototypeOf(HorizontalBox)).call(this));
 
-        _this5._remainingWidthFiller = null;
-        _this5._isHorizontal = true;
-        return _this5;
+        _this6._remainingWidthFiller = null;
+        _this6._isHorizontal = true;
+        return _this6;
     }
 
     _createClass(HorizontalBox, [{
@@ -1307,12 +1236,12 @@ var Widget = function (_Element2) {
     function Widget() {
         _classCallCheck(this, Widget);
 
-        var _this6 = _possibleConstructorReturn(this, (Widget.__proto__ || Object.getPrototypeOf(Widget)).call(this));
+        var _this7 = _possibleConstructorReturn(this, (Widget.__proto__ || Object.getPrototypeOf(Widget)).call(this));
 
-        _this6.setMargins(2, 4, 2, 2);
-        _this6._type = "none";
-        _this6._name = NumberGen();
-        return _this6;
+        _this7.setMargins(2, 4, 2, 2);
+        _this7._type = "none";
+        _this7._name = NumberGen();
+        return _this7;
     }
 
     /**
@@ -1382,13 +1311,13 @@ var GroupBox = function (_VerticalBox2) {
 
         _classCallCheck(this, GroupBox);
 
-        var _this7 = _possibleConstructorReturn(this, (GroupBox.__proto__ || Object.getPrototypeOf(GroupBox)).call(this));
+        var _this8 = _possibleConstructorReturn(this, (GroupBox.__proto__ || Object.getPrototypeOf(GroupBox)).call(this));
 
-        _this7._text = text;
-        _this7._name = "groupbox-" + Widget.NumberGen();
-        if (_this7._text != "") _this7._paddingTop = 13;else _this7._paddingTop = 8;
-        _this7._paddingBottom = 5;
-        return _this7;
+        _this8._text = text;
+        _this8._name = "groupbox-" + Widget.NumberGen();
+        if (_this8._text != "") _this8._paddingTop = 13;else _this8._paddingTop = 8;
+        _this8._paddingBottom = 5;
+        return _this8;
     }
 
     /**
@@ -1496,15 +1425,15 @@ var Button = function (_Widget) {
 
         _classCallCheck(this, Button);
 
-        var _this8 = _possibleConstructorReturn(this, (Button.__proto__ || Object.getPrototypeOf(Button)).call(this));
+        var _this9 = _possibleConstructorReturn(this, (Button.__proto__ || Object.getPrototypeOf(Button)).call(this));
 
-        _this8._type = "button";
-        _this8._name = _this8._type + "-" + _this8._name;
-        _this8._height = 13;
-        _this8._onClick = onClick;
-        _this8._hasBorder = true;
-        _this8._isPressed = false;
-        return _this8;
+        _this9._type = "button";
+        _this9._name = _this9._type + "-" + _this9._name;
+        _this9._height = 13;
+        _this9._onClick = onClick;
+        _this9._hasBorder = true;
+        _this9._isPressed = false;
+        return _this9;
     }
 
     /**
@@ -1567,11 +1496,11 @@ var Button = function (_Widget) {
     }, {
         key: "_getDescription",
         value: function _getDescription() {
-            var _this9 = this;
+            var _this10 = this;
 
             var desc = _get(Button.prototype.__proto__ || Object.getPrototypeOf(Button.prototype), "_getDescription", this).call(this);
             desc.onClick = function () {
-                if (_this9._onClick) _this9._onClick.call(_this9);
+                if (_this10._onClick) _this10._onClick.call(_this10);
             };
             desc.border = this._hasBorder;
             desc.isPressed = this._isPressed;
@@ -1612,13 +1541,13 @@ var Label = function (_Widget2) {
 
         _classCallCheck(this, Label);
 
-        var _this10 = _possibleConstructorReturn(this, (Label.__proto__ || Object.getPrototypeOf(Label)).call(this));
+        var _this11 = _possibleConstructorReturn(this, (Label.__proto__ || Object.getPrototypeOf(Label)).call(this));
 
-        _this10._type = "label";
-        _this10._text = text;
-        _this10._name = _this10._type + "-" + _this10._name;
-        _this10._height = 10;
-        return _this10;
+        _this11._type = "label";
+        _this11._text = text;
+        _this11._name = _this11._type + "-" + _this11._name;
+        _this11._height = 10;
+        return _this11;
     }
 
     /**
@@ -1679,10 +1608,10 @@ var TextButton = function (_Button) {
 
         _classCallCheck(this, TextButton);
 
-        var _this11 = _possibleConstructorReturn(this, (TextButton.__proto__ || Object.getPrototypeOf(TextButton)).call(this, onClick));
+        var _this12 = _possibleConstructorReturn(this, (TextButton.__proto__ || Object.getPrototypeOf(TextButton)).call(this, onClick));
 
-        _this11._text = text;
-        return _this11;
+        _this12._text = text;
+        return _this12;
     }
 
     /**
@@ -1743,11 +1672,11 @@ var ImageButton = function (_Button2) {
 
         _classCallCheck(this, ImageButton);
 
-        var _this12 = _possibleConstructorReturn(this, (ImageButton.__proto__ || Object.getPrototypeOf(ImageButton)).call(this, onClick));
+        var _this13 = _possibleConstructorReturn(this, (ImageButton.__proto__ || Object.getPrototypeOf(ImageButton)).call(this, onClick));
 
-        _this12._image = image;
-        _this12._hasBorder = false;
-        return _this12;
+        _this13._image = image;
+        _this13._hasBorder = false;
+        return _this13;
     }
 
     /**
@@ -1808,15 +1737,15 @@ var Checkbox = function (_Widget3) {
 
         _classCallCheck(this, Checkbox);
 
-        var _this13 = _possibleConstructorReturn(this, (Checkbox.__proto__ || Object.getPrototypeOf(Checkbox)).call(this));
+        var _this14 = _possibleConstructorReturn(this, (Checkbox.__proto__ || Object.getPrototypeOf(Checkbox)).call(this));
 
-        _this13._type = "checkbox";
-        _this13._text = text;
-        _this13._name = _this13._type + "-" + _this13._name;
-        _this13._height = 10;
-        _this13._onChange = onChange;
-        _this13._isChecked = false;
-        return _this13;
+        _this14._type = "checkbox";
+        _this14._text = text;
+        _this14._name = _this14._type + "-" + _this14._name;
+        _this14._height = 10;
+        _this14._onChange = onChange;
+        _this14._isChecked = false;
+        return _this14;
     }
 
     /**
@@ -1856,14 +1785,14 @@ var Checkbox = function (_Widget3) {
     }, {
         key: "_getDescription",
         value: function _getDescription() {
-            var _this14 = this;
+            var _this15 = this;
 
             var desc = _get(Checkbox.prototype.__proto__ || Object.getPrototypeOf(Checkbox.prototype), "_getDescription", this).call(this);
             desc.text = this._text;
 
             desc.onChange = function (checked) {
-                _this14._isChecked = checked;
-                if (_this14._onChange) _this14._onChange.call(_this14, checked);
+                _this15._isChecked = checked;
+                if (_this15._onChange) _this15._onChange.call(_this15, checked);
             };
             desc.isChecked = this._isChecked;
             return desc;
@@ -1897,15 +1826,15 @@ var Dropdown = function (_Widget4) {
 
         _classCallCheck(this, Dropdown);
 
-        var _this15 = _possibleConstructorReturn(this, (Dropdown.__proto__ || Object.getPrototypeOf(Dropdown)).call(this));
+        var _this16 = _possibleConstructorReturn(this, (Dropdown.__proto__ || Object.getPrototypeOf(Dropdown)).call(this));
 
-        _this15._type = "dropdown";
-        _this15._name = _this15._type + "-" + _this15._name;
-        _this15._height = 13;
-        _this15._onChange = onChange;
-        _this15._items = items.slice(0);
-        _this15._selectedIndex = 0;
-        return _this15;
+        _this16._type = "dropdown";
+        _this16._name = _this16._type + "-" + _this16._name;
+        _this16._height = 13;
+        _this16._onChange = onChange;
+        _this16._items = items.slice(0);
+        _this16._selectedIndex = 0;
+        return _this16;
     }
 
     /**
@@ -1944,13 +1873,13 @@ var Dropdown = function (_Widget4) {
     }, {
         key: "_getDescription",
         value: function _getDescription() {
-            var _this16 = this;
+            var _this17 = this;
 
             var desc = _get(Dropdown.prototype.__proto__ || Object.getPrototypeOf(Dropdown.prototype), "_getDescription", this).call(this);
             desc.items = this._items;
             desc.onChange = function (i) {
-                _this16._selectedIndex = i;
-                if (_this16._onChange) _this16._onChange.call(_this16, i);
+                _this17._selectedIndex = i;
+                if (_this17._onChange) _this17._onChange.call(_this17, i);
             };
             desc.selectedIndex = this._selectedIndex;
             return desc;
@@ -1988,16 +1917,16 @@ var Spinner = function (_Widget5) {
 
         _classCallCheck(this, Spinner);
 
-        var _this17 = _possibleConstructorReturn(this, (Spinner.__proto__ || Object.getPrototypeOf(Spinner)).call(this));
+        var _this18 = _possibleConstructorReturn(this, (Spinner.__proto__ || Object.getPrototypeOf(Spinner)).call(this));
 
-        _this17._type = "spinner";
-        _this17._value = Number(value);
-        _this17._step = Number(step);
-        _this17._decimals = Math.max(_this17.countDecimals(_this17._step), _this17.countDecimals(_this17._value));
-        _this17._name = _this17._type + "-" + _this17._name;
-        _this17._height = 13;
-        _this17._onChange = onChange;
-        return _this17;
+        _this18._type = "spinner";
+        _this18._value = Number(value);
+        _this18._step = Number(step);
+        _this18._decimals = Math.max(_this18.countDecimals(_this18._step), _this18.countDecimals(_this18._value));
+        _this18._name = _this18._type + "-" + _this18._name;
+        _this18._height = 13;
+        _this18._onChange = onChange;
+        return _this18;
     }
 
     /**
@@ -2095,21 +2024,21 @@ var Spinner = function (_Widget5) {
     }, {
         key: "_getDescription",
         value: function _getDescription() {
-            var _this18 = this;
+            var _this19 = this;
 
             var desc = _get(Spinner.prototype.__proto__ || Object.getPrototypeOf(Spinner.prototype), "_getDescription", this).call(this);
             desc.text = this._value.toFixed(this._decimals);
             desc.onIncrement = function () {
-                _this18._value += _this18._step;
-                _this18._value = Number(_this18._value.toFixed(_this18._decimals));
-                if (_this18._onChange) _this18._onChange.call(_this18, _this18._value);
-                _this18.requestSync();
+                _this19._value += _this19._step;
+                _this19._value = Number(_this19._value.toFixed(_this19._decimals));
+                if (_this19._onChange) _this19._onChange.call(_this19, _this19._value);
+                _this19.requestSync();
             };
             desc.onDecrement = function () {
-                _this18._value -= _this18._step;
-                _this18._value = Number(_this18._value.toFixed(_this18._decimals));
-                if (_this18._onChange) _this18._onChange.call(_this18, _this18._value);
-                _this18.requestSync();
+                _this19._value -= _this19._step;
+                _this19._value = Number(_this19._value.toFixed(_this19._decimals));
+                if (_this19._onChange) _this19._onChange.call(_this19, _this19._value);
+                _this19.requestSync();
             };
             desc.isChecked = this._isChecked;
             return desc;
@@ -2146,7 +2075,7 @@ var ListViewColumn = function () {
         this._width = 0;
         this._minWidth = -1;
         this._maxWidth = -1;
-        this._ratioWidth = 0;
+        this._ratioWidth = -1;
     }
 
     /**
@@ -2319,13 +2248,19 @@ var ListViewColumn = function () {
                 headerTooltip: this._headerTooltip
             };
             if (this._widthMode == "auto") {
-                if (this._minWidth > 0) {
+                if (this._minWidth >= 0) {
                     desc.minWidth = this._minWidth;
                 }
-                if (this._maxWidth > 0) {
+                if (this._maxWidth >= 0) {
                     desc.maxWidth = this._maxWidth;
                 }
             } else if (this._widthMode == "ratio") {
+                if (this._minWidth >= 0) {
+                    desc.minWidth = this._minWidth;
+                }
+                if (this._maxWidth >= 0) {
+                    desc.maxWidth = this._maxWidth;
+                }
                 desc.ratioWidth = this._ratioWidth;
             } else if (this._widthMode == "fixed") {
                 desc.width = this._width;
@@ -2367,29 +2302,29 @@ var ListView = function (_Widget6) {
 
         _classCallCheck(this, ListView);
 
-        var _this19 = _possibleConstructorReturn(this, (ListView.__proto__ || Object.getPrototypeOf(ListView)).call(this));
+        var _this20 = _possibleConstructorReturn(this, (ListView.__proto__ || Object.getPrototypeOf(ListView)).call(this));
 
-        _this19._type = "listview";
-        _this19._name = _this19._type + "-" + _this19._name;
-        _this19._height = 64;
+        _this20._type = "listview";
+        _this20._name = _this20._type + "-" + _this20._name;
+        _this20._height = 64;
 
-        _this19._scrollbars = "vertical";
-        _this19._isStriped = false;
-        _this19._showColumnHeaders = true;
-        _this19._canSelect = false;
+        _this20._scrollbars = "vertical";
+        _this20._isStriped = false;
+        _this20._showColumnHeaders = true;
+        _this20._canSelect = false;
 
-        _this19._columns = [];
-        _this19._items = [];
+        _this20._columns = [];
+        _this20._items = [];
 
-        _this19._highlightedRow = -1;
-        _this19._highlightedColumn = -1;
+        _this20._highlightedRow = -1;
+        _this20._highlightedColumn = -1;
 
-        _this19._selectedRow = -1;
-        _this19._selectedColumn = -1;
+        _this20._selectedRow = -1;
+        _this20._selectedColumn = -1;
 
-        _this19._onHighlight = null;
-        _this19._onClick = onClick;
-        return _this19;
+        _this20._onHighlight = null;
+        _this20._onClick = onClick;
+        return _this20;
     }
 
     /**
@@ -2539,8 +2474,8 @@ var ListView = function (_Widget6) {
                         listViewColumns.push(listViewColumn);
                     }
                 }
-                for (var _i5 = 0; _i5 < listViewColumns.length; _i5++) {
-                    listViewColumns[_i5]._listView = this;
+                for (var _i = 0; _i < listViewColumns.length; _i++) {
+                    listViewColumns[_i]._listView = this;
                 }
                 this._columns = listViewColumns;
             }
@@ -2629,21 +2564,21 @@ var ListView = function (_Widget6) {
     }, {
         key: "_getDescription",
         value: function _getDescription() {
-            var _this20 = this;
+            var _this21 = this;
 
             var desc = _get(ListView.prototype.__proto__ || Object.getPrototypeOf(ListView.prototype), "_getDescription", this).call(this);
             desc.scrollbars = this._scrollbars;
             desc.isStriped = this._isStriped;
 
             desc.onClick = function (item, column) {
-                _this20._selectedRow = item;
-                _this20._selectedColumn = column;
-                if (_this20._onClick != null) _this20._onClick.call(_this20, _this20._selectedRow, _this20._selectedColumn);
+                _this21._selectedRow = item;
+                _this21._selectedColumn = column;
+                if (_this21._onClick != null) _this21._onClick.call(_this21, _this21._selectedRow, _this21._selectedColumn);
             };
             desc.onHighlight = function (item, column) {
-                _this20._highlightedRow = item;
-                _this20._highlightedColumn = column;
-                if (_this20._onHighlight != null) _this20._onHighlight.call(_this20, _this20._highlightedRow, _this20._highlightedColumn);
+                _this21._highlightedRow = item;
+                _this21._highlightedColumn = column;
+                if (_this21._onHighlight != null) _this21._onHighlight.call(_this21, _this21._highlightedRow, _this21._highlightedColumn);
             };
 
             desc.showColumnHeaders = this._showColumnHeaders;
@@ -2720,22 +2655,22 @@ var ViewportWidget = function (_Widget7) {
 
         _classCallCheck(this, ViewportWidget);
 
-        var _this21 = _possibleConstructorReturn(this, (ViewportWidget.__proto__ || Object.getPrototypeOf(ViewportWidget)).call(this));
+        var _this22 = _possibleConstructorReturn(this, (ViewportWidget.__proto__ || Object.getPrototypeOf(ViewportWidget)).call(this));
 
-        _this21._type = "viewport";
-        _this21._name = _this21._type + "-" + _this21._name;
-        _this21._height = 64;
+        _this22._type = "viewport";
+        _this22._name = _this22._type + "-" + _this22._name;
+        _this22._height = 64;
 
-        _this21._viewX = viewX;
-        _this21._viewY = viewY;
-        _this21._zoom = 0;
-        _this21._rotation = 0;
-        _this21._visibilityFlags = 0;
+        _this22._viewX = viewX;
+        _this22._viewY = viewY;
+        _this22._zoom = 0;
+        _this22._rotation = 0;
+        _this22._visibilityFlags = 0;
 
-        _this21._scrollView = false;
+        _this22._scrollView = false;
 
-        _this21._initMove = false;
-        return _this21;
+        _this22._initMove = false;
+        return _this22;
     }
 
     /**
@@ -2843,10 +2778,10 @@ var ColorPicker = function (_Dropdown) {
 
         _classCallCheck(this, ColorPicker);
 
-        var _this22 = _possibleConstructorReturn(this, (ColorPicker.__proto__ || Object.getPrototypeOf(ColorPicker)).call(this, ["Black", "Grey", "White", "Dark Purple", "Light Purple", "Bright Purple", "Dark Blue", "Light Blue", "Icy Blue", "Teal", "Aquamarine", "Saturated Green", "Dark Green", "Moss Green", "Bright Green", "Olive Green", "Dark Olive Green", "Bright Yellow", "Yellow", "Dark Yellow", "Light Orange", "Dark Orange", "Light Brown", "Saturated Brown", "Dark Brown", "Salmon Pink", "Bordeaux Red", "Saturated Red", "Bright Red", "Dark Pink", "Bright Pink", "Light Pink"], onChange));
+        var _this23 = _possibleConstructorReturn(this, (ColorPicker.__proto__ || Object.getPrototypeOf(ColorPicker)).call(this, ["Black", "Grey", "White", "Dark Purple", "Light Purple", "Bright Purple", "Dark Blue", "Light Blue", "Icy Blue", "Teal", "Aquamarine", "Saturated Green", "Dark Green", "Moss Green", "Bright Green", "Olive Green", "Dark Olive Green", "Bright Yellow", "Yellow", "Dark Yellow", "Light Orange", "Dark Orange", "Light Brown", "Saturated Brown", "Dark Brown", "Salmon Pink", "Bordeaux Red", "Saturated Red", "Bright Red", "Dark Pink", "Bright Pink", "Light Pink"], onChange));
 
-        _this22._height = 12;
-        return _this22;
+        _this23._height = 12;
+        return _this23;
     }
 
     return ColorPicker;
@@ -2878,113 +2813,40 @@ var Oui = /*#__PURE__*/Object.freeze({
     GroupBox: GroupBox
 });
 
-var LocationPrompt = function () {
-    function LocationPrompt() {
-        var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "location-prompt";
-
-        _classCallCheck(this, LocationPrompt);
-
-        this.id = id;
-        this.cursor = "cross_hair";
-        this.onFinish = null;
-        this.onCancelled = null;
-
-        this.selectedCoords = { x: 0, y: 0 };
-    }
-
-    _createClass(LocationPrompt, [{
-        key: "setSelectionRange",
-        value: function setSelectionRange(start, end) {
-            var left = Math.min(start.x, end.x);
-            var right = Math.max(start.x, end.x);
-            var top = Math.min(start.y, end.y);
-            var bottom = Math.max(start.y, end.y);
-            ui.tileSelection.range = {
-                leftTop: { x: left, y: top },
-                rightBottom: { x: right, y: bottom }
-            };
-        }
-    }, {
-        key: "prompt",
-        value: function prompt() {
-            var _this23 = this;
-
-            var onFinish = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-            var onCancelled = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-            if (ui.tool && ui.tool.id == this.id) {
-                this.cancel();
-            }
-            this.onFinish = onFinish;
-            this.onCancelled = onCancelled;
-
-            ui.activateTool({
-                id: this.id,
-                cursor: this.cursor,
-                onStart: function onStart(e) {
-                    ui.mainViewport.visibilityFlags |= 1 << 7;
-                },
-                onDown: function onDown(e) {
-                    _this23.selectedCoords = e.mapCoords;
-                    _this23.setSelectionRange(_this23.selectedCoords, _this23.selectedCoords);
-                },
-                onMove: function onMove(e) {
-                    _this23.selectedCoords = e.mapCoords;
-                    _this23.setSelectionRange(_this23.selectedCoords, _this23.selectedCoords);
-                },
-                onUp: function onUp(e) {
-                    _this23.selectedCoords = e.mapCoords;
-                    _this23.setSelectionRange(_this23.selectedCoords, _this23.selectedCoords);
-                    if (_this23.onFinish) _this23.onFinish(Math.floor(_this23.selectedCoords.x / 32), Math.floor(_this23.selectedCoords.y / 32));
-                    ui.tileSelection.range = null;
-                    ui.tool.cancel();
-                },
-                onFinish: function onFinish() {
-                    ui.tileSelection.range = null;
-                    ui.mainViewport.visibilityFlags &= ~(1 << 7);
-                }
-            });
-        }
-    }, {
-        key: "cancel",
-        value: function cancel() {
-            if (ui.tool && ui.tool.id == this.id) {
-                if (this.onCancelled) {
-                    this.onCancelled();
-                }
-                ui.tool.cancel();
-            }
-        }
-    }]);
-
-    return LocationPrompt;
-}();
-
 var LocationPromptWidget = function () {
-    function LocationPromptWidget(title, locationPrompt) {
-        var onSet = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    function LocationPromptWidget(text, locationPrompt, x, y) {
+        var onSet = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
 
         _classCallCheck(this, LocationPromptWidget);
 
-        this.element = this._createElements(title, locationPrompt);
-
-        this.isSet = false;
+        this.isSet = x > -1 && y > -1;
         this.onSet = onSet;
+
+        this.currentLocationX = x;
+        this.currentLocationY = y;
+
+        this.element = this._createElements(text, locationPrompt);
     }
 
     _createClass(LocationPromptWidget, [{
         key: "_createElements",
-        value: function _createElements(title, locationPrompt) {
+        value: function _createElements(text, locationPrompt) {
             var _this24 = this;
 
-            var groupbox = new Oui.GroupBox(title);
-            groupbox.setWidth(120);
+            var that = this;
+            var horizontalBox = new Oui.HorizontalBox();
+            horizontalBox.setPadding(0, 0, 0, 0);
 
-            var promptLocationButton = new Oui.Widgets.Button("Select Location", function () {
+            var locateButton = null;
+
+            var promptLocationButton = new Oui.Widgets.ImageButton(5504, function () {
                 if (!promptLocationButton.isPressed()) {
                     locationPrompt.prompt(function (x, y) {
+                        _this24.currentLocationX = x;
+                        _this24.currentLocationY = y;
+                        locateButton.setIsDisabled(false);
                         promptLocationButton.setIsPressed(false);
-                        statusLabel.setText("Set");
+                        statusLabel.setText("Location set (x: " + x + ", y: " + y + ")");
                         //statusLabel.setTooltip("x: " + x + ", y: " + y);
                         _this24.isSet = true;
                         if (_this24.onSet) _this24.onSet(x, y);
@@ -2997,42 +2859,266 @@ var LocationPromptWidget = function () {
                     promptLocationButton.setIsPressed(false);
                 }
             });
-            groupbox.addChild(promptLocationButton);
+            promptLocationButton.setWidth(44);
+            promptLocationButton.setHeight(32);
+            promptLocationButton.setBorder(true);
+            horizontalBox.addChild(promptLocationButton);
 
-            var statusLabel = new Oui.Widgets.Label("Unset");
-            groupbox.addChild(statusLabel);
+            var infoBox = new Oui.VerticalBox();
+            infoBox._paddingTop = infoBox._paddingTop + 1;
+            horizontalBox.addChild(infoBox);
+            horizontalBox.setRemainingWidthFiller(infoBox);
 
-            return groupbox;
+            var infoLabel = new Oui.Widgets.Label(text);
+            infoBox.addChild(infoLabel);
+
+            var statusLabel = new Oui.Widgets.Label("No location");
+            infoBox.addChild(statusLabel);
+
+            locateButton = new Oui.Widgets.ImageButton(5167, function () {
+                ui.mainViewport.scrollTo({ x: that.currentLocationX * 32, y: that.currentLocationY * 32 });
+            });
+            locateButton.setWidth(24);
+            locateButton.setHeight(24);
+            locateButton.setIsDisabled(true);
+            horizontalBox.addChild(locateButton);
+
+            if (this.isSet) {
+                statusLabel.setText("Location set (x: " + this.currentLocationX + ", y: " + this.currentLocationY + ")");
+                locateButton.setIsDisabled(false);
+            }
+
+            return horizontalBox;
         }
     }]);
 
     return LocationPromptWidget;
 }();
 
-var TrainSensor = function () {
-    function TrainSensor(rideId, x, y, onExit) {
-        _classCallCheck(this, TrainSensor);
-
-        this.rideId = rideId;
-        this.x = x;
-        this.y = y;
-
-        this._sensedEntityId = -1;
-
-        this.onExit = onExit;
+var MapHelper = function () {
+    function MapHelper() {
+        _classCallCheck(this, MapHelper);
     }
 
-    _createClass(TrainSensor, [{
+    _createClass(MapHelper, null, [{
+        key: "InsertTileElement",
+        value: function InsertTileElement(tile, height) {
+            var index = MapHelper.FindPlacementPosition(tile, height);
+            var element = tile.insertElement(index);
+            element._index = index;
+            element.baseHeight = height;
+            return element;
+        }
+    }, {
+        key: "FindPlacementPosition",
+        value: function FindPlacementPosition(tile, height) {
+            var index = 0;
+            for (index = 0; index < tile.numElements; index++) {
+                var element = tile.getElement(index);
+                if (element.baseHeight >= height) {
+                    break;
+                }
+            }
+            return index;
+        }
+    }, {
+        key: "GetTileSurfaceZ",
+        value: function GetTileSurfaceZ(x, y) {
+            var tile = map.getTile(x, y);
+            if (tile) {
+                for (var i = 0; i < tile.numElements; i++) {
+                    var element = tile.getElement(i);
+                    if (element && element.type == "surface") {
+                        return element.baseHeight;
+                    }
+                }
+            }
+            return null;
+        }
+    }, {
+        key: "PlaceSmallScenery",
+        value: function PlaceSmallScenery(tile, objectIndex, height) {
+            var orientation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+            var element = MapHelper.InsertTileElement(tile, height);
+            element.type = "small_scenery";
+            element.object = objectIndex;
+            element.clearanceHeight = height + 1;
+            return element;
+        }
+    }, {
+        key: "PlaceWall",
+        value: function PlaceWall(tile, objectIndex, height) {
+            var orientation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+            var element = MapHelper.InsertTileElement(tile, height);
+            element.type = "wall";
+            element.object = objectIndex;
+            element.clearanceHeight = height + 1;
+            return element;
+        }
+    }, {
+        key: "GetElementIndex",
+        value: function GetElementIndex(tile, element) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var elementB = tile.getElement(i);
+                if (elementB && element == elementB) {
+                    return i;
+                }
+            }
+            return null;
+        }
+    }, {
+        key: "SetPrimaryTileColor",
+        value: function SetPrimaryTileColor(tile, elementIndex, color) {
+            var data = tile.data;
+            var typeFieldIndex = 6;
+            data[16 * elementIndex + typeFieldIndex] = color;
+            tile.data = data;
+        }
+    }, {
+        key: "SetFlag",
+        value: function SetFlag(tile, elementIndex, flag, enable) {
+            var data = tile.data;
+            var typeFieldIndex = 1;
+            if (enable) {
+                data[16 * elementIndex + typeFieldIndex] |= flag;
+            } else {
+                data[16 * elementIndex + typeFieldIndex] &= ~flag;
+            }
+            tile.data = data;
+        }
+    }, {
+        key: "GetFlag",
+        value: function GetFlag(tile, elementIndex, flag) {
+            var data = tile.data;
+            var typeFieldIndex = 1;
+            return data[16 * elementIndex + typeFieldIndex] & flag;
+        }
+    }, {
+        key: "SetTileElementRotation",
+        value: function SetTileElementRotation(tile, elementIndex, orientation) {
+            var data = tile.data;
+            var typeFieldIndex = 0;
+            var directionMask = 3;
+            data[16 * elementIndex + typeFieldIndex] &= ~directionMask;
+            data[16 * elementIndex + typeFieldIndex] |= orientation & directionMask;
+            tile.data = data;
+        }
+    }, {
+        key: "GetTileElementRotation",
+        value: function GetTileElementRotation(tile, elementIndex) {
+            var data = tile.data;
+            var typeFieldIndex = 0;
+            var directionMask = 3;
+            return data[16 * elementIndex + typeFieldIndex] & directionMask;
+        }
+    }, {
+        key: "GetTrackElement",
+        value: function GetTrackElement(tile) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track") {
+                    return element;
+                }
+            }
+            return null;
+        }
+    }, {
+        key: "SwitchTrackElements",
+        value: function SwitchTrackElements(tile) {
+            var firstTrackElement = -1;
+            var secondTrackElement = -1;
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track") {
+                    if (firstTrackElement < 0) {
+                        firstTrackElement = i;
+                    } else {
+                        secondTrackElement = i;
+                        break;
+                    }
+                }
+            }
+            if (firstTrackElement < 0 || secondTrackElement < 0) return false;
+
+            var isFinalElement = MapHelper.GetFlag(tile, secondTrackElement, 128);
+
+            var data = tile.data;
+
+            var getDataA = new Uint8Array(16);
+            for (var _i2 = 0; _i2 < 16; _i2++) {
+                getDataA[_i2] = data[firstTrackElement * 16 + _i2];
+            }
+            var getDataB = new Uint8Array(16);
+            for (var _i3 = 0; _i3 < 16; _i3++) {
+                getDataB[_i3] = data[secondTrackElement * 16 + _i3];
+            }
+            for (var _i4 = 0; _i4 < 16; _i4++) {
+                data[firstTrackElement * 16 + _i4] = getDataB[_i4];
+                data[secondTrackElement * 16 + _i4] = getDataA[_i4];
+            }
+
+            if (isFinalElement) {
+                // Set last tile element flags
+                for (var _i5 = 0; _i5 < tile.numElements; _i5++) {
+                    data[_i5 * 16 + 1] &= ~128;
+                    if (_i5 == tile.numElements - 1) {
+                        data[_i5 * 16 + 1] |= 128;
+                    }
+                }
+            }
+
+            tile.data = data;
+
+            return true;
+        }
+    }]);
+
+    return MapHelper;
+}();
+
+var VehicleSensor = function (_Trigger) {
+    _inherits(VehicleSensor, _Trigger);
+
+    function VehicleSensor(element) {
+        _classCallCheck(this, VehicleSensor);
+
+        var _this25 = _possibleConstructorReturn(this, (VehicleSensor.__proto__ || Object.getPrototypeOf(VehicleSensor)).call(this, element));
+
+        _this25.element = element;
+
+        _this25.rideId = -1;
+        _this25.x = -1;
+        _this25.y = -1;
+
+        _this25._sensedEntityId = -1;
+        return _this25;
+    }
+
+    _createClass(VehicleSensor, [{
         key: "isValid",
         value: function isValid() {
-            if (this.rideId == -1 || this.onExit == null) return false;
-            if (this.x == -1 || this.y == -1) return false;
+            if (this.x == -1 || this.y == -1) {
+                this.validationMessage = "Sensor location has not been set";
+                return false;
+            }
+            if (this.rideId == -1) {
+                this.validationMessage = "Sensor is not at a location with track";
+                return false;
+            }
+            if (map.getRide(this.rideId) == null) {
+                this.validationMessage = "Sensor is not at a location with track";
+                return false;
+            }
+            this.validationMessage = "Vehicle sensor is ready to go";
             return true;
         }
     }, {
         key: "test",
         value: function test(car) {
             if (car.ride != this.rideId) return false;
+
             if (car.nextCarOnTrain != null) // Last car on the train
                 return false;
 
@@ -3040,7 +3126,7 @@ var TrainSensor = function () {
                 if (Math.floor(car.x / 32) != this.x && Math.floor(car.y / 32) != this.y) {
                     if (this._sensedEntityId == car.id) {
                         this._sensedEntityId = -1;
-                        if (this.onExit) this.onExit();
+                        this.element.action.perform();
                         return true;
                     }
                 }
@@ -3051,29 +3137,293 @@ var TrainSensor = function () {
             }
             return false;
         }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                rideId: this.rideId,
+                x: this.x,
+                y: this.y
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.rideId = data.rideId;
+            this.x = data.x;
+            this.y = data.y;
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {
+            var _this26 = this;
+
+            var box = new Oui.VerticalBox();
+            box.setPadding(0, 0, 0, 0);
+
+            this.isValid();
+            var statusLabel = new Oui.Widgets.Label(this.validationMessage);
+
+            var sensorLoc = new LocationPromptWidget("Vehicle Sensor:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+                var track = MapHelper.GetTrackElement(map.getTile(x, y));
+                if (track) {
+                    _this26.rideId = track.ride;
+                } else {
+                    _this26.rideId = -1;
+                }
+                _this26.x = x;
+                _this26.y = y;
+                _this26.isValid();
+                statusLabel.setText(_this26.validationMessage);
+            });
+            sensorLoc.element._marginTop += 8;
+            box.addChild(sensorLoc.element);
+
+            box.addChild(statusLabel);
+
+            return box;
+        }
     }]);
 
-    return TrainSensor;
+    return VehicleSensor;
+}(Trigger);
+
+var Action = function () {
+    function Action(element) {
+        _classCallCheck(this, Action);
+
+        this.element = element;
+
+        this.validationMessage = "";
+    }
+
+    _createClass(Action, [{
+        key: "isValid",
+        value: function isValid() {
+            return true;
+        }
+    }, {
+        key: "perform",
+        value: function perform() {}
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {};
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {}
+    }]);
+
+    return Action;
 }();
 
+var SwitchTrack = function (_Action) {
+    _inherits(SwitchTrack, _Action);
+
+    function SwitchTrack(element) {
+        _classCallCheck(this, SwitchTrack);
+
+        var _this27 = _possibleConstructorReturn(this, (SwitchTrack.__proto__ || Object.getPrototypeOf(SwitchTrack)).call(this, element));
+
+        _this27.x = -1;
+        _this27.y = -1;
+        return _this27;
+    }
+
+    _createClass(SwitchTrack, [{
+        key: "isValid",
+        value: function isValid() {
+            if (this.x == -1 || this.y == -1) {
+                this.validationMessage = "Track switch location has not been set";
+                return false;
+            }
+            if (!MapHelper.GetTrackElement(map.getTile(this.x, this.y))) {
+                this.validationMessage = "There is no track at the set location";
+                return false;
+            }
+            this.validationMessage = "Switch track is ready to go";
+            return true;
+        }
+    }, {
+        key: "perform",
+        value: function perform() {
+            MapHelper.SwitchTrackElements(map.getTile(this.x, this.y));
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                x: this.x,
+                y: this.y
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.x = data.x;
+            this.y = data.y;
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {
+            var _this28 = this;
+
+            var box = new Oui.VerticalBox();
+            box.setPadding(0, 0, 0, 0);
+
+            this.isValid();
+            var statusLabel = new Oui.Widgets.Label(this.validationMessage);
+
+            var switchLoc = new LocationPromptWidget("Switch Track:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+                _this28.x = x;
+                _this28.y = y;
+                _this28.isValid();
+                statusLabel.setText(_this28.validationMessage);
+            });
+            switchLoc.element._marginTop += 8;
+            box.addChild(switchLoc.element);
+
+            box.addChild(statusLabel);
+
+            return box;
+        }
+    }]);
+
+    return SwitchTrack;
+}(Action);
+
+var Element$1 = function () {
+    function Element$1(manager, triggerType, actionType) {
+        _classCallCheck(this, Element$1);
+
+        this.manager = manager;
+
+        this._isValidCache = false;
+
+        this.triggerType = triggerType;
+        this.trigger = new Element$1.TriggerTypes[triggerType](this);
+        this.actionType = actionType;
+        this.action = new Element$1.ActionTypes[actionType](this);
+    }
+
+    _createClass(Element$1, [{
+        key: "getTitle",
+        value: function getTitle() {
+            if (this.triggerType == 0) {
+                if (map.getRide(this.trigger.rideId)) return map.getRide(this.trigger.rideId).name;
+                return "Missing Ride";
+            }
+            return "Advanced Track Element";
+        }
+    }, {
+        key: "isValid",
+        value: function isValid() {
+            var a = this.trigger.isValid() && this.action.isValid();
+            this._isValidCache = a;
+            return a;
+        }
+    }, {
+        key: "test",
+        value: function test(car) {
+            this.trigger.test(car);
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                triggerType: this.triggerType,
+                actionType: this.actionType,
+                trigger: this.trigger.serialize(),
+                action: this.action.serialize()
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.trigger.deserialize(data.trigger);
+            this.action.deserialize(data.action);
+            this.isValid();
+        }
+    }]);
+
+    return Element$1;
+}();
+
+Element$1.TriggerTypes = [VehicleSensor];
+
+Element$1.TriggerTypeNames = ["Vehicle Sensor"];
+
+Element$1.ActionTypes = [SwitchTrack];
+
+Element$1.ActionTypeNames = ["Switch Track"];
+
 var AdvancedTrackManager = function () {
-    function AdvancedTrackManager() {
+    function AdvancedTrackManager(parkData) {
         _classCallCheck(this, AdvancedTrackManager);
 
-        this.sensors = [];
+        this.parkData = parkData;
+        this.elements = [];
+
+        this.locationPrompt = new LocationPrompt("advanced-track-location-prompt");
     }
 
     _createClass(AdvancedTrackManager, [{
+        key: "addElement",
+        value: function addElement(element) {
+            this.elements.push(element);
+        }
+    }, {
+        key: "deleteElement",
+        value: function deleteElement(element) {
+            var index = this.elements.indexOf(element);
+            if (index >= 0) {
+                this.elements.splice(index, 1);
+            }
+
+            this.save();
+        }
+    }, {
+        key: "hasElement",
+        value: function hasElement(element) {
+            return this.elements.indexOf(element) >= 0;
+        }
+    }, {
+        key: "save",
+        value: function save() {
+            var data = {};
+
+            data.elements = [];
+            for (var i = 0; i < this.elements.length; i++) {
+                data.elements.push(this.elements[i].serialize());
+            }
+            this.parkData.save(data);
+        }
+    }, {
+        key: "load",
+        value: function load() {
+            var data = this.parkData.load();
+            if (data == null) {
+                return; // No data to load.
+            }
+
+            for (var i = 0; i < data.elements.length; i++) {
+                var newElement = new Element$1(this, data.elements[i].triggerType, data.elements[i].actionType);
+                newElement.deserialize(data.elements[i]);
+                this.elements.push(newElement);
+            }
+        }
+    }, {
         key: "tick",
         value: function tick() {
             var carEntities = map.getAllEntities("car");
-            for (var i = 0; i < this.sensors.length; i++) {
-                var sensor = this.sensors[i];
-                if (!sensor.isValid()) continue;
+            for (var i = 0; i < this.elements.length; i++) {
+                var element = this.elements[i];
+                if (!element.isValid()) continue;
 
                 for (var j = 0; j < carEntities.length; j++) {
                     var car = carEntities[j];
-                    sensor.test(car);
+                    element.trigger.test(car);
                 }
             }
         }
@@ -3082,60 +3432,76 @@ var AdvancedTrackManager = function () {
     return AdvancedTrackManager;
 }();
 
-var SensorSwitchWindow = function () {
-    function SensorSwitchWindow(sensor) {
-        _classCallCheck(this, SensorSwitchWindow);
+var EditElementWindow = function () {
+    function EditElementWindow(parent, element) {
+        _classCallCheck(this, EditElementWindow);
 
-        this.sensor = sensor;
+        this.parent = parent;
+        this.element = element;
         this.locationPrompt = new LocationPrompt("loc-prompt");
         this.window = this.createWindow();
     }
 
-    _createClass(SensorSwitchWindow, [{
+    _createClass(EditElementWindow, [{
         key: "createWindow",
         value: function createWindow() {
-            var _this25 = this;
-
             var that = this;
 
-            var window = new Oui.Window("advanced-track-sensor-switch", "Advanced Track - Edit Sensor Switch");
+            var window = new Oui.Window("advanced-track-edit", "Advanced Track - Edit Element");
+            window._paddingBottom = 6;
+            window._paddingLeft = 6;
+            window._paddingRight = 6;
+            window.setColors(24);
             window.setWidth(300);
 
             window.setOnClose(function () {
                 that.locationPrompt.cancel();
             });
 
-            var label = new Oui.Widgets.Label("Select the location for the sensor,");
-            window.addChild(label);
-            var label2 = new Oui.Widgets.Label("and the location of the track to switch.");
-            window.addChild(label2);
+            var labelTriggerExpl = new Oui.Widgets.Label("The trigger is the cause for of an action");
+            window.addChild(labelTriggerExpl);
 
-            var horBox = new Oui.HorizontalBox();
-            window.addChild(horBox);
+            var triggerBox = new Oui.GroupBox("Trigger");
+            triggerBox.setMargins(6, 6, triggerBox._marginLeft, triggerBox._marginRight);
+            window.addChild(triggerBox);
 
-            var sensorLoc = new LocationPromptWidget("Sensor", this.locationPrompt, function (x, y) {
-                _this25.sensor.x = x;
-                _this25.sensor.y = y;
+            triggerBox.addChild(this.element.trigger.createWidget());
 
-                var track = MapHelper.GetTrackElement(map.getTile(x, y));
-                _this25.sensor.rideId = track.ride;
+            var labelActionExpl = new Oui.Widgets.Label("The action happens when the trigger is triggered");
+            window.addChild(labelActionExpl);
+
+            var actionBox = new Oui.GroupBox("Action");
+            actionBox.setMargins(6, 6, actionBox._marginLeft, actionBox._marginRight);
+            window.addChild(actionBox);
+
+            actionBox.addChild(this.element.action.createWidget());
+
+            var bottom = new Oui.HorizontalBox();
+            bottom.setPadding(0, 0, 0, 0);
+            window.addChild(bottom);
+
+            var bottomFiller = new Oui.VerticalBox();
+            bottom.addChild(bottomFiller);
+            bottom.setRemainingWidthFiller(bottomFiller);
+
+            var okButton = new Oui.Widgets.Button("Ok", function () {
+                if (!that.parent.advancedTrackManager.hasElement(that.element)) {
+                    that.parent.advancedTrackManager.addElement(that.element);
+                }
+                that.parent.advancedTrackManager.save();
+                that.window._handle.close();
+                that.parent.advancedTrackManager.locationPrompt.cancel();
+                that.parent.window._openAtPosition = true;
+                that.parent.open();
             });
-            sensorLoc.element.setRelativeWidth(50);
-            horBox.addChild(sensorLoc.element);
-
-            var switchLoc = new LocationPromptWidget("Switch", this.locationPrompt, function (x, y) {
-                _this25.sensor.onExit = function () {
-                    MapHelper.SwitchTrackElements(map.getTile(x, y));
-                };
-            });
-            switchLoc.element.setRelativeWidth(50);
-            horBox.addChild(switchLoc.element);
+            okButton.setWidth(50);
+            bottom.addChild(okButton);
 
             return window;
         }
     }]);
 
-    return SensorSwitchWindow;
+    return EditElementWindow;
 }();
 
 var AdvancedTrackWindow = function () {
@@ -3160,9 +3526,9 @@ var AdvancedTrackWindow = function () {
             // Update listview.
 
             this.listView._items = [];
-            for (var i = 0; i < this.advancedTrackManager.sensors.length; i++) {
-                var sensor = this.advancedTrackManager.sensors[i];
-                this.listView._items.push(this.getRowFromItem(sensor, i));
+            for (var i = 0; i < this.advancedTrackManager.elements.length; i++) {
+                var element = this.advancedTrackManager.elements[i];
+                this.listView._items.push(this.getRowFromItem(element, i));
             }
 
             this.window.open();
@@ -3170,45 +3536,74 @@ var AdvancedTrackWindow = function () {
     }, {
         key: "createWindow",
         value: function createWindow() {
-            var _this26 = this;
+            var _this29 = this;
 
             var that = this;
 
+            var infoRight = null;
+
             var window = new Oui.Window("advanced-track-main", "Advanced Track");
+            window.setColors(26, 24);
             window._paddingBottom = 14;
+            window._paddingTop = 16 + 6;
             window._paddingLeft = 6;
             window._paddingRight = 6;
             window.setWidth(400);
             window.setHorizontalResize(true, 300, 600);
             window.setHeight(200);
             window.setVerticalResize(true, 200, 600);
+            window.setOnClose(function () {
+                infoRight.setIsDisabled(true);
+            });
 
-            var label = new Oui.Widgets.Label("Advanced Track Elements");
-            window.addChild(label);
+            {
+                var label = new Oui.Widgets.Label("Advanced Track save data is linked to the park name, NOT to the save file");
+                window.addChild(label);
+            }
+            {
+                var _label = new Oui.Widgets.Label("Changes are saved automatically upon making changes. Use with care.");
+                _label._marginBottom = 8;
+                window.addChild(_label);
+            }
 
             var listView = new Oui.Widgets.ListView();
             this.listView = listView;
             listView.setCanSelect(true);
-            listView.setColumns(["ID", "Type", "Ride", "Location", "Valid"]);
-            listView.getColumns()[0].setWidth(20);
+            listView.setColumns(["ID", "Valid", "Trigger", "Action", "Ride"]);
+            listView.getColumns()[0].setMinWidth(16);
+            listView.getColumns()[0].setRatioWidth(16);
+            listView.getColumns()[1].setMinWidth(16);
+            listView.getColumns()[1].setRatioWidth(30);
+            listView.getColumns()[2].setMinWidth(42);
+            listView.getColumns()[2].setRatioWidth(60);
+            listView.getColumns()[3].setMinWidth(42);
+            listView.getColumns()[3].setRatioWidth(60);
+            listView.getColumns()[4].setRatioWidth(200);
             window.addChild(listView);
             window.setRemainingHeightFiller(listView);
 
             var infoBar = new Oui.HorizontalBox();
             infoBar.setRelativeWidth(100);
-            infoBar.setHeight(50);
+            infoBar.setHeight(54);
+            infoBar._marginBottom = 8;
+            infoBar._paddingLeft = 0;
+            infoBar._paddingRight = 0;
             window.addChild(infoBar);
 
             /*
             let viewport = new Oui.Widgets.ViewportWidget();
-            viewport.setRelativeWidth(50);
-            viewport.setHeight(100);
+            viewport.setWidth(160);
+            viewport.setRelativeHeight(100);
             infoBar.addChild(viewport);*/
 
-            var infoRight = new Oui.GroupBox("Element");
+            infoRight = new Oui.GroupBox("Element");
             infoRight.setRelativeHeight(100);
             infoBar.addChild(infoRight);
             infoBar.setRemainingWidthFiller(infoRight);
+
+            var infoRightLabel = new Oui.Widgets.Label("");
+            infoRight.addChild(infoRightLabel);
+            infoRight.setRemainingHeightFiller(infoRightLabel);
 
             var editButton = new Oui.Widgets.Button("Edit", function () {
                 that.openEditWindow(that.selectedItem);
@@ -3216,16 +3611,23 @@ var AdvancedTrackWindow = function () {
             infoRight.addChild(editButton);
 
             var deleteButton = new Oui.Widgets.Button("Delete", function () {
+                that.advancedTrackManager.deleteElement(that.selectedItem);
                 infoRight.setIsDisabled(true);
+
+                that.window._x = that.window._handle.x;
+                that.window._y = that.window._handle.y;
+                that.window._handle.close();
+                that.window._openAtPosition = true;
+                that.open();
             });
             infoRight.addChild(deleteButton);
 
             infoRight.setIsDisabled(true);
 
             listView.setOnClick(function (row, column) {
-                var sensor = that.advancedTrackManager.sensors[row];
-                that.selectedItem = sensor;
-                //viewport.setView(sensor.x, sensor.y);
+                var element = that.advancedTrackManager.elements[row];
+                that.selectedItem = element;
+                //viewport.setView(element.x, element.y);
                 infoRight.setIsDisabled(false);
             });
 
@@ -3236,25 +3638,23 @@ var AdvancedTrackWindow = function () {
             bottom.addChild(filler);
             bottom.setRemainingWidthFiller(filler);
 
-            var elementTypes = new Oui.Widgets.Dropdown(["Vehicle Sensor"], function (index) {
-                _this26.selectedTriggerType = index;
+            var elementTypes = new Oui.Widgets.Dropdown(Element$1.TriggerTypeNames, function (index) {
+                _this29.selectedTriggerType = index;
             });
             elementTypes.setWidth(100);
             elementTypes.setHeight(13);
             bottom.addChild(elementTypes);
 
-            var elementReactionTypes = new Oui.Widgets.Dropdown(["Track Switch"], function (index) {
-                _this26.selectedReactionType = index;
+            var elementReactionTypes = new Oui.Widgets.Dropdown(Element$1.ActionTypeNames, function (index) {
+                _this29.selectedReactionType = index;
             });
             elementReactionTypes.setWidth(100);
             elementReactionTypes.setHeight(13);
             bottom.addChild(elementReactionTypes);
 
             var addButton = new Oui.Widgets.Button("Create New", function () {
-                var newSensor = new TrainSensor(-1, -1, -1, null);
-                that.advancedTrackManager.sensors.push(newSensor);
-
-                that.openEditWindow(newSensor);
+                var newElement = new Element$1(that.advancedTrackManager, that.selectedTriggerType, that.selectedReactionType);
+                that.openEditWindow(newElement);
             });
             addButton.setHeight(13);
             addButton.setWidth(100);
@@ -3265,6 +3665,14 @@ var AdvancedTrackWindow = function () {
     }, {
         key: "openEditWindow",
         value: function openEditWindow(item) {
+            this.editWindow = new EditElementWindow(this, item);
+
+            this.window._x = this.window._handle.x;
+            this.window._y = this.window._handle.y;
+            this.editWindow.window._x = this.window._x + this.window.getPixelWidth() / 2 - this.editWindow.window.getPixelWidth() / 2;
+            this.editWindow.window._y = this.window._y + this.window.getPixelHeight() / 2 - this.editWindow.window.getPixelHeight() / 2;
+            this.editWindow.window._openAtPosition = true;
+
             this.window._handle.close();
             if (this.editWindow != null) {
                 if (this.editWindow._handle) {
@@ -3272,26 +3680,198 @@ var AdvancedTrackWindow = function () {
                 }
             }
 
-            this.editWindow = new SensorSwitchWindow(item);
             this.editWindow.window.open();
         }
     }, {
         key: "getRowFromItem",
         value: function getRowFromItem(item, i) {
-            var ride = map.getRide(item.rideId);
-            if (ride == null) {
-                return [i + "", "Sensor Switch", "Ride not found", item.x + ", " + item.y, "False"];
-            }
-
-            return [i + "", "Sensor Switch", ride.name, item.x + ", " + item.y, item.isValid() ? "True" : "False"];
+            return [i + "", item.isValid() ? "Y" : "N", Element$1.TriggerTypeNames[item.triggerType], Element$1.ActionTypeNames[item.actionType], item.getTitle()];
         }
     }]);
 
     return AdvancedTrackWindow;
 }();
 
+var ParkData = function () {
+    function ParkData() {
+        _classCallCheck(this, ParkData);
+
+        this.namespace = "";
+        this.parkName = "";
+
+        this.identifier = 0;
+        this.loaded = false;
+
+        this.overwrite = false;
+    }
+
+    _createClass(ParkData, [{
+        key: "init",
+        value: function init(namespace) {
+            this.namespace = namespace;
+            this.parkName = park.name;
+        }
+    }, {
+        key: "save",
+        value: function save(parkData) {
+            this.parkName = park.name;
+            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
+            if (allParksData == null) {
+                allParksData = [];
+            }
+            if (this.identifier < allParksData.length) {
+                if (this.loaded && this.checkExistingName() && !this.overwrite) {
+                    this.showDupeWarning(parkData);
+                } else {
+                    allParksData[this.identifier] = {
+                        parkName: this.parkName,
+                        data: parkData
+                    };
+
+                    if (parkData.elements.length == 0) {
+                        allParksData.splice(this.identifier, 1);
+                        this.identifier = allParksData.length;
+                    }
+                }
+            } else {
+                if (this.checkExistingName() && !this.overwrite) {
+                    this.showDupeWarning(parkData);
+                } else {
+                    if (parkData.elements.length > 0) {
+                        allParksData.push({
+                            parkName: this.parkName,
+                            data: parkData
+                        });
+                    }
+                }
+            }
+            this.loaded = true;
+            context.sharedStorage.set(this.namespace + ".ParkData", allParksData);
+
+            this.overwrite = false;
+        }
+    }, {
+        key: "showDupeWarning",
+        value: function showDupeWarning(data) {
+            var that = this;
+            var window = new Oui.Window("advanced-track-dupe", "Advanced Track Warning");
+            window.setColors(28);
+            window.setWidth(300);
+
+            {
+                var line = new Oui.Widgets.Label("Advanced track data has not been saved.");
+                line._marginBottom = 8;
+                window.addChild(line);
+            }
+            {
+                var _line = new Oui.Widgets.Label("This plugin uses the park name to link save data");
+                window.addChild(_line);
+            }
+            {
+                var _line2 = new Oui.Widgets.Label("but a park with this name already exists.");
+                window.addChild(_line2);
+            }
+            {
+                var _line3 = new Oui.Widgets.Label("Please change the park name to something unique");
+                window.addChild(_line3);
+            }
+            {
+                var _line4 = new Oui.Widgets.Label("or proceed to overwrite the existing data.");
+                window.addChild(_line4);
+            }
+
+            var bottom = new Oui.HorizontalBox();
+            bottom.setPadding(0, 0, 0, 0);
+            window.addChild(bottom);
+
+            var overwriteButton = new Oui.Widgets.Button("Overwrite", function () {
+                that.overwriteData(data);
+            });
+            overwriteButton.setWidth(80);
+            bottom.addChild(overwriteButton);
+
+            var bottomLabel = new Oui.Widgets.Label("");
+            bottom.addChild(bottomLabel);
+            bottom.setRemainingWidthFiller(bottomLabel);
+
+            var cancelButton = new Oui.Widgets.Button("Cancel", function () {
+                window._handle.close();
+            });
+            cancelButton.setWidth(80);
+            bottom.addChild(cancelButton);
+
+            window._x = ui.width / 2 - window.getPixelWidth() / 2;
+            window._y = ui.height / 2 - window.getPixelHeight() / 2;
+            window._openAtPosition = true;
+            window.open();
+        }
+    }, {
+        key: "overwriteData",
+        value: function overwriteData(data) {
+            this.overwrite = true;
+            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
+            if (allParksData == null) {
+                allParksData = [];
+            }
+            for (var i = 0; i < allParksData.length; i++) {
+                if (allParksData[i].parkName == this.parkName && this.identifier != i) {
+                    this.identifier = i;
+                    return;
+                }
+            }
+            this.save(data);
+        }
+    }, {
+        key: "checkExistingName",
+        value: function checkExistingName() {
+            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
+            if (allParksData == null) {
+                allParksData = [];
+            }
+            for (var i = 0; i < allParksData.length; i++) {
+                if (allParksData[i].parkName == this.parkName && this.identifier != i) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }, {
+        key: "load",
+        value: function load() {
+            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
+            if (allParksData == null) {
+                allParksData = [];
+            }
+            for (var i = 0; i < allParksData.length; i++) {
+                if (allParksData[i].parkName == this.parkName) {
+                    this.identifier = i;
+                    this.loaded = true;
+                    return allParksData[i].data;
+                }
+            }
+            this.identifier = allParksData.length;
+            return null;
+        }
+    }]);
+
+    return ParkData;
+}();
+
+// Expose the OpenRCT2 to Visual Studio Code's Intellisense
+/// <reference path="../../../bin/openrct2.d.ts" />
+
 function main() {
-    var advancedTrackManager = new AdvancedTrackManager();
+
+    function closeWindow(classification) {
+        var window = ui.getWindow(classification);
+        if (window) {
+            window.close();
+        }
+    }
+
+    var parkData = new ParkData();
+    parkData.init("Oli414.AdvancedTrack");
+    var advancedTrackManager = new AdvancedTrackManager(parkData);
     var advancedTrackWindow = new AdvancedTrackWindow(advancedTrackManager);
 
     ui.registerMenuItem("Advanced Track", function () {
@@ -3301,6 +3881,11 @@ function main() {
     context.subscribe("interval.tick", function () {
         advancedTrackManager.tick();
     });
+
+    closeWindow("advanced-track-edit");
+    closeWindow("advanced-track-main");
+
+    advancedTrackManager.load();
 }
 
 registerPlugin({

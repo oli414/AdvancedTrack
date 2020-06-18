@@ -393,11 +393,9 @@ class Box extends Element {
      */
     getTotalChildMarginWidths() {
         let width = 0;
-        for (let i = 0; i < this._children.length; i++) {
+        for (let i = 0; i < this._children.length - 1; i++) {
             let child = this._children[i];
-            if (i < this._children.length - 1) {
-                width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
-            }
+            width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
         }
         return width;
     }
@@ -1537,7 +1535,7 @@ class ListViewColumn {
         this._width = 0;
         this._minWidth = -1;
         this._maxWidth = -1;
-        this._ratioWidth = 0;
+        this._ratioWidth = -1;
     }
 
     /**
@@ -1666,14 +1664,20 @@ class ListViewColumn {
             headerTooltip: this._headerTooltip
         };
         if (this._widthMode == "auto") {
-            if (this._minWidth > 0) {
+            if (this._minWidth >= 0) {
                 desc.minWidth = this._minWidth;
             }
-            if (this._maxWidth > 0) {
+            if (this._maxWidth >= 0) {
                 desc.maxWidth = this._maxWidth;
             }
         }
         else if (this._widthMode == "ratio") {
+            if (this._minWidth >= 0) {
+                desc.minWidth = this._minWidth;
+            }
+            if (this._maxWidth >= 0) {
+                desc.maxWidth = this._maxWidth;
+            }
             desc.ratioWidth = this._ratioWidth;
         }
         else if (this._widthMode == "fixed") {
