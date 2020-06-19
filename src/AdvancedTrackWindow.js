@@ -138,14 +138,14 @@ class AdvancedTrackWindow {
         bottom.setRemainingWidthFiller(filler);
 
         let elementTypes = new Oui.Widgets.Dropdown(Element.TriggerTypeNames, (index) => {
-            this.selectedTriggerType = index;
+            that.selectedTriggerType = index;
         })
         elementTypes.setWidth(100);
         elementTypes.setHeight(13);
         bottom.addChild(elementTypes);
 
         let elementReactionTypes = new Oui.Widgets.Dropdown(Element.ActionTypeNames, (index) => {
-            this.selectedReactionType = index;
+            that.selectedReactionType = index;
         })
         elementReactionTypes.setWidth(100);
         elementReactionTypes.setHeight(13);

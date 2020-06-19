@@ -77,6 +77,18 @@ class MapHelper {
         tile.data = data;
     }
 
+    static SetFlag2(tile, elementIndex, flag, enable) {
+        let data = tile.data;
+        let typeFieldIndex = 10;
+        if (enable) {
+            data[16 * elementIndex + typeFieldIndex] |= flag;
+        }
+        else {
+            data[16 * elementIndex + typeFieldIndex] &= ~flag;
+        }
+        tile.data = data;
+    }
+
     static GetFlag(tile, elementIndex, flag) {
         let data = tile.data;
         let typeFieldIndex = 1;
@@ -107,6 +119,15 @@ class MapHelper {
             }
         }
         return null;
+    }
+
+    static SetBlockBrake(tile, blocked) {
+        for (let i = 0; i < tile.numElements; i++) {
+            let element = tile.getElement(i);
+            if (element.type == "track") {
+                MapHelper.SetFlag2(tile, i, 32, blocked);
+            }
+        }
     }
 
     static SwitchTrackElements(tile) {

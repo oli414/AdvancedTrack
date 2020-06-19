@@ -5,10 +5,10 @@ class Element {
     constructor() {
         this._parent = null;
 
-        this._marginTop = 0;
-        this._marginBottom = 2;
-        this._marginLeft = 0;
-        this._marginRight = 0;
+        this._marginTop = 4;
+        this._marginBottom = 4;
+        this._marginLeft = 4;
+        this._marginRight = 4;
 
         this._x = 0;
         this._y = 0;
@@ -286,7 +286,7 @@ class Box extends Element {
 
         this._width = 100;
 
-        this.setPadding(3, 3, 4, 4);
+        this.setPadding(4, 4, 6, 6);
 
         this._isHorizontal = false;
 
@@ -393,9 +393,11 @@ class Box extends Element {
      */
     getTotalChildMarginWidths() {
         let width = 0;
-        for (let i = 0; i < this._children.length - 1; i++) {
+        for (let i = 0; i < this._children.length; i++) {
             let child = this._children[i];
-            width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
+            if (i < this._children.length - 1) {
+                width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
+            }
         }
         return width;
     }
@@ -983,10 +985,10 @@ class GroupBox extends VerticalBox {
         this._text = text;
         this._name = "groupbox-" + Widget.NumberGen();
         if (this._text != "")
-            this._paddingTop = 13;
+            this._paddingTop = 15;
         else
-            this._paddingTop = 8;
-        this._paddingBottom = 5;
+            this._paddingTop = 10;
+        this._paddingBottom = 6;
     }
 
     /**
@@ -1158,6 +1160,11 @@ class Label extends Widget {
      */
     constructor(text = "") {
         super();
+
+        this._marginTop = 2;
+        this._marginBottom = 2;
+        this._marginLeft = 2;
+        this._marginRight = 2;
 
         this._type = "label";
         this._text = text;
@@ -1373,6 +1380,15 @@ class Dropdown extends Widget {
         return this._items.slice(0);
     }
 
+    getSelectedItem() {
+        return this._selectedIndex;
+    }
+
+    setSelectedItem(itemIndex) {
+        this._selectedIndex = itemIndex;
+        this.requestSync();
+    }
+
     /**
      * Set the list of dropdown items.
      * @param {string[]} items List of all the items to display.
@@ -1397,7 +1413,7 @@ class Dropdown extends Widget {
     _applyDescription(handle, desc) {
         super._applyDescription(handle, desc);
         handle.items = desc.items;
-        handle.selectedIndex = desc.selectedIndex;
+        desc.selectedIndex = desc.selectedIndex;
     }
 }
 
@@ -1535,7 +1551,7 @@ class ListViewColumn {
         this._width = 0;
         this._minWidth = -1;
         this._maxWidth = -1;
-        this._ratioWidth = -1;
+        this._ratioWidth = 0;
     }
 
     /**
@@ -1664,20 +1680,14 @@ class ListViewColumn {
             headerTooltip: this._headerTooltip
         };
         if (this._widthMode == "auto") {
-            if (this._minWidth >= 0) {
+            if (this._minWidth > 0) {
                 desc.minWidth = this._minWidth;
             }
-            if (this._maxWidth >= 0) {
+            if (this._maxWidth > 0) {
                 desc.maxWidth = this._maxWidth;
             }
         }
         else if (this._widthMode == "ratio") {
-            if (this._minWidth >= 0) {
-                desc.minWidth = this._minWidth;
-            }
-            if (this._maxWidth >= 0) {
-                desc.maxWidth = this._maxWidth;
-            }
             desc.ratioWidth = this._ratioWidth;
         }
         else if (this._widthMode == "fixed") {
@@ -1937,7 +1947,6 @@ class ListView extends Widget {
             desc.showColumnHeaders = false; // Showing column headers when there are no columns causes a crash.
 
         desc.canSelect = this._canSelect;
-
         if (this._canSelect && this._selectedRow > 0 && this._selectedColumn > 0) {
             desc.selectedCell = {
                 row: this._selectedRow,
@@ -1961,9 +1970,6 @@ class ListView extends Widget {
         handle.isStriped = desc.isStriped;
         handle.showColumnHeaders = desc.showColumnHeaders;
         handle.canSelect = desc.canSelect;
-
-
-        /*
         if (desc.selectedCell) {
             if (handle.selectedCell == null) {
                 handle.selectedCell = desc.selectedCell;
@@ -1973,6 +1979,7 @@ class ListView extends Widget {
                 handle.selectedCell.column = desc.selectedCell.column;
             }
         }
+
         for (let i = 0; i < handle.columns.length && i < desc.columns.length; i++) {
             handle.columns[i] = desc.columns[i];
         }
@@ -1981,7 +1988,7 @@ class ListView extends Widget {
             for (let j = 0; j < handle.items[i].length && j < desc.items[i].length; j++) {
                 handle.items[i][j] = desc.items[i][j];
             }
-        }*/
+        }
     }
 }
 
@@ -2007,7 +2014,6 @@ class ViewportWidget extends Widget {
         this._viewY = viewY;
         this._zoom = 0;
         this._rotation = 0;
-        this._visibilityFlags = 0;
 
         this._scrollView = false;
 
@@ -2059,22 +2065,16 @@ class ViewportWidget extends Widget {
 
     _getDescription() {
         let desc = super._getDescription();
-
         this._initMove = true;
-        this.requestSync();
+        this.requestRefresh();
         return desc;
     }
 
     _applyDescription(handle, desc) {
-        handle.x = desc.x;
-        handle.y = desc.y;
-        handle.width = desc.width;
-        handle.height = desc.height;
-        //super._applyDescription(handle, desc);
-
+        super._applyDescription(handle, desc);
         handle.viewport.rotation = this._rotation;
         handle.viewport.zoom = this._zoom;
-        //handle.viewport.visibilityFlags = this._visibilityFlags;
+        handle.viewport.visibilityFlags = this._visibilityFlags;
 
         if (this._initMove) {
             handle.viewport.moveTo({ x: this._viewX, y: this._viewY });

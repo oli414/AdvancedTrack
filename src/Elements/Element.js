@@ -1,5 +1,6 @@
 import VehicleSensor from "./Triggers/VehicleSensor";
 import SwitchTrack from "./Actions/SwitchTrack";
+import SetBlockBrake from "./Actions/SetBlockBrake";
 
 class Element {
     constructor(manager, triggerType, actionType) {
@@ -57,11 +58,13 @@ Element.TriggerTypeNames = [
 ];
 
 Element.ActionTypes = [
-    SwitchTrack
+    SwitchTrack,
+    SetBlockBrake
 ];
 
 Element.ActionTypeNames = [
-    "Switch Track"
+    "Switch Track",
+    "Set Block Brake"
 ];
 
 export default Element;

@@ -12,6 +12,8 @@ class VehicleSensor extends Trigger {
         this.x = -1;
         this.y = -1;
 
+        this.method = 0;
+
         this._sensedEntityId = -1;
     }
 
@@ -36,21 +38,41 @@ class VehicleSensor extends Trigger {
         if (car.ride != this.rideId)
             return false;
 
-        if (car.nextCarOnTrain != null) // Last car on the train
+        if (this.method == 1 && car.nextCarOnTrain != null) // Last car on the train
             return false;
+
+        if (this.method == 0) {
+            if (car.previousCarOnRide != car.id) { // Only car on the train
+                // Check if this is the front car
+                let previousCar = map.getEntity(car.previousCarOnRide);
+                if (previousCar.nextCarOnTrain != null) {
+                    return false;
+                }
+            }
+        }
+
 
         if (this._sensedEntityId >= 0) {
             if (Math.floor(car.x / 32) != this.x || Math.floor(car.y / 32) != this.y) {
                 if (this._sensedEntityId == car.id) {
                     this._sensedEntityId = -1;
-                    this.element.action.perform();
-                    return true;
+
+                    if (this.method == 1) {
+                        this.element.action.perform();
+                        return true;
+                    }
+                    return false;
                 }
             }
         }
         else {
             if (Math.floor(car.x / 32) == this.x && Math.floor(car.y / 32) == this.y) {
                 this._sensedEntityId = car.id;
+
+                if (this.method == 0) {
+                    this.element.action.perform();
+                    return true;
+                }
             }
         }
         return false;
@@ -61,6 +83,7 @@ class VehicleSensor extends Trigger {
             rideId: this.rideId,
             x: this.x,
             y: this.y,
+            method: this.method
         };
     }
 
@@ -68,6 +91,13 @@ class VehicleSensor extends Trigger {
         this.rideId = data.rideId;
         this.x = data.x;
         this.y = data.y;
+
+        if (data.method != null) {
+            this.method = data.method;
+        }
+        else {
+            this.method = 1;
+        }
     }
 
     createWidget() {
@@ -99,8 +129,25 @@ class VehicleSensor extends Trigger {
             this.isValid();
             statusLabel.setText(this.validationMessage);
         });
-        sensorLoc.element._marginTop += 8;
         box.addChild(sensorLoc.element);
+
+        let methodForm = new Oui.HorizontalBox();
+        methodForm.setPadding(0, 0, 0, 0);
+        box.addChild(methodForm);
+
+        let methodLabel = new Oui.Widgets.Label("Trigger when the:");
+        methodLabel.setWidth(100);
+        methodForm.addChild(methodLabel);
+
+        let method = new Oui.Widgets.Dropdown([
+            "Train enters the sensor",
+            "Train exits the sensor"
+        ], (index) => {
+            this.method = index;
+        });
+        method.setSelectedItem(this.method);
+        methodForm.addChild(method);
+        methodForm.setRemainingWidthFiller(method);
 
         box.addChild(statusLabel);
 

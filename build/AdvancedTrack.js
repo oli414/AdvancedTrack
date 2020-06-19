@@ -137,10 +137,10 @@ var Element = function () {
 
         this._parent = null;
 
-        this._marginTop = 0;
-        this._marginBottom = 2;
-        this._marginLeft = 0;
-        this._marginRight = 0;
+        this._marginTop = 4;
+        this._marginBottom = 4;
+        this._marginLeft = 4;
+        this._marginRight = 4;
 
         this._x = 0;
         this._y = 0;
@@ -469,7 +469,7 @@ var Box = function (_Element) {
 
         _this2._width = 100;
 
-        _this2.setPadding(3, 3, 4, 4);
+        _this2.setPadding(4, 4, 6, 6);
 
         _this2._isHorizontal = false;
 
@@ -602,9 +602,11 @@ var Box = function (_Element) {
         key: "getTotalChildMarginWidths",
         value: function getTotalChildMarginWidths() {
             var width = 0;
-            for (var i = 0; i < this._children.length - 1; i++) {
+            for (var i = 0; i < this._children.length; i++) {
                 var child = this._children[i];
-                width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
+                if (i < this._children.length - 1) {
+                    width += Math.max(child._marginRight, this._children[i + 1]._marginLeft);
+                }
             }
             return width;
         }
@@ -1317,8 +1319,8 @@ var GroupBox = function (_VerticalBox2) {
 
         _this8._text = text;
         _this8._name = "groupbox-" + Widget.NumberGen();
-        if (_this8._text != "") _this8._paddingTop = 13;else _this8._paddingTop = 8;
-        _this8._paddingBottom = 5;
+        if (_this8._text != "") _this8._paddingTop = 15;else _this8._paddingTop = 10;
+        _this8._paddingBottom = 6;
         return _this8;
     }
 
@@ -1544,6 +1546,11 @@ var Label = function (_Widget2) {
         _classCallCheck(this, Label);
 
         var _this11 = _possibleConstructorReturn(this, (Label.__proto__ || Object.getPrototypeOf(Label)).call(this));
+
+        _this11._marginTop = 2;
+        _this11._marginBottom = 2;
+        _this11._marginLeft = 2;
+        _this11._marginRight = 2;
 
         _this11._type = "label";
         _this11._text = text;
@@ -1860,6 +1867,17 @@ var Dropdown = function (_Widget4) {
         value: function getItems() {
             return this._items.slice(0);
         }
+    }, {
+        key: "getSelectedItem",
+        value: function getSelectedItem() {
+            return this._selectedIndex;
+        }
+    }, {
+        key: "setSelectedItem",
+        value: function setSelectedItem(itemIndex) {
+            this._selectedIndex = itemIndex;
+            this.requestSync();
+        }
 
         /**
          * Set the list of dropdown items.
@@ -1891,7 +1909,7 @@ var Dropdown = function (_Widget4) {
         value: function _applyDescription(handle, desc) {
             _get(Dropdown.prototype.__proto__ || Object.getPrototypeOf(Dropdown.prototype), "_applyDescription", this).call(this, handle, desc);
             handle.items = desc.items;
-            handle.selectedIndex = desc.selectedIndex;
+            desc.selectedIndex = desc.selectedIndex;
         }
     }]);
 
@@ -2077,7 +2095,7 @@ var ListViewColumn = function () {
         this._width = 0;
         this._minWidth = -1;
         this._maxWidth = -1;
-        this._ratioWidth = -1;
+        this._ratioWidth = 0;
     }
 
     /**
@@ -2250,19 +2268,13 @@ var ListViewColumn = function () {
                 headerTooltip: this._headerTooltip
             };
             if (this._widthMode == "auto") {
-                if (this._minWidth >= 0) {
+                if (this._minWidth > 0) {
                     desc.minWidth = this._minWidth;
                 }
-                if (this._maxWidth >= 0) {
+                if (this._maxWidth > 0) {
                     desc.maxWidth = this._maxWidth;
                 }
             } else if (this._widthMode == "ratio") {
-                if (this._minWidth >= 0) {
-                    desc.minWidth = this._minWidth;
-                }
-                if (this._maxWidth >= 0) {
-                    desc.maxWidth = this._maxWidth;
-                }
                 desc.ratioWidth = this._ratioWidth;
             } else if (this._widthMode == "fixed") {
                 desc.width = this._width;
@@ -2587,7 +2599,6 @@ var ListView = function (_Widget6) {
             if (this._columns.length == 0) desc.showColumnHeaders = false; // Showing column headers when there are no columns causes a crash.
 
             desc.canSelect = this._canSelect;
-
             if (this._canSelect && this._selectedRow > 0 && this._selectedColumn > 0) {
                 desc.selectedCell = {
                     row: this._selectedRow,
@@ -2612,25 +2623,24 @@ var ListView = function (_Widget6) {
             handle.isStriped = desc.isStriped;
             handle.showColumnHeaders = desc.showColumnHeaders;
             handle.canSelect = desc.canSelect;
-
-            /*
             if (desc.selectedCell) {
                 if (handle.selectedCell == null) {
                     handle.selectedCell = desc.selectedCell;
-                }
-                else {
+                } else {
                     handle.selectedCell.row = desc.selectedCell.row;
                     handle.selectedCell.column = desc.selectedCell.column;
                 }
             }
-            for (let i = 0; i < handle.columns.length && i < desc.columns.length; i++) {
+
+            for (var i = 0; i < handle.columns.length && i < desc.columns.length; i++) {
                 handle.columns[i] = desc.columns[i];
             }
-              for (let i = 0; i < handle.items.length && i < desc.items.length; i++) {
-                for (let j = 0; j < handle.items[i].length && j < desc.items[i].length; j++) {
-                    handle.items[i][j] = desc.items[i][j];
+
+            for (var _i2 = 0; _i2 < handle.items.length && _i2 < desc.items.length; _i2++) {
+                for (var j = 0; j < handle.items[_i2].length && j < desc.items[_i2].length; j++) {
+                    handle.items[_i2][j] = desc.items[_i2][j];
                 }
-            }*/
+            }
         }
     }]);
 
@@ -2667,7 +2677,6 @@ var ViewportWidget = function (_Widget7) {
         _this22._viewY = viewY;
         _this22._zoom = 0;
         _this22._rotation = 0;
-        _this22._visibilityFlags = 0;
 
         _this22._scrollView = false;
 
@@ -2730,23 +2739,17 @@ var ViewportWidget = function (_Widget7) {
         key: "_getDescription",
         value: function _getDescription() {
             var desc = _get(ViewportWidget.prototype.__proto__ || Object.getPrototypeOf(ViewportWidget.prototype), "_getDescription", this).call(this);
-
             this._initMove = true;
-            this.requestSync();
+            this.requestRefresh();
             return desc;
         }
     }, {
         key: "_applyDescription",
         value: function _applyDescription(handle, desc) {
-            handle.x = desc.x;
-            handle.y = desc.y;
-            handle.width = desc.width;
-            handle.height = desc.height;
-            //super._applyDescription(handle, desc);
-
+            _get(ViewportWidget.prototype.__proto__ || Object.getPrototypeOf(ViewportWidget.prototype), "_applyDescription", this).call(this, handle, desc);
             handle.viewport.rotation = this._rotation;
             handle.viewport.zoom = this._zoom;
-            //handle.viewport.visibilityFlags = this._visibilityFlags;
+            handle.viewport.visibilityFlags = this._visibilityFlags;
 
             if (this._initMove) {
                 handle.viewport.moveTo({ x: this._viewX, y: this._viewY });
@@ -2995,6 +2998,18 @@ var MapHelper = function () {
             tile.data = data;
         }
     }, {
+        key: "SetFlag2",
+        value: function SetFlag2(tile, elementIndex, flag, enable) {
+            var data = tile.data;
+            var typeFieldIndex = 10;
+            if (enable) {
+                data[16 * elementIndex + typeFieldIndex] |= flag;
+            } else {
+                data[16 * elementIndex + typeFieldIndex] &= ~flag;
+            }
+            tile.data = data;
+        }
+    }, {
         key: "GetFlag",
         value: function GetFlag(tile, elementIndex, flag) {
             var data = tile.data;
@@ -3031,6 +3046,16 @@ var MapHelper = function () {
             return null;
         }
     }, {
+        key: "SetBlockBrake",
+        value: function SetBlockBrake(tile, blocked) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track") {
+                    MapHelper.SetFlag2(tile, i, 32, blocked);
+                }
+            }
+        }
+    }, {
         key: "SwitchTrackElements",
         value: function SwitchTrackElements(tile) {
             var firstTrackElement = -1;
@@ -3053,24 +3078,24 @@ var MapHelper = function () {
             var data = tile.data;
 
             var getDataA = new Uint8Array(16);
-            for (var _i2 = 0; _i2 < 16; _i2++) {
-                getDataA[_i2] = data[firstTrackElement * 16 + _i2];
+            for (var _i3 = 0; _i3 < 16; _i3++) {
+                getDataA[_i3] = data[firstTrackElement * 16 + _i3];
             }
             var getDataB = new Uint8Array(16);
-            for (var _i3 = 0; _i3 < 16; _i3++) {
-                getDataB[_i3] = data[secondTrackElement * 16 + _i3];
-            }
             for (var _i4 = 0; _i4 < 16; _i4++) {
-                data[firstTrackElement * 16 + _i4] = getDataB[_i4];
-                data[secondTrackElement * 16 + _i4] = getDataA[_i4];
+                getDataB[_i4] = data[secondTrackElement * 16 + _i4];
+            }
+            for (var _i5 = 0; _i5 < 16; _i5++) {
+                data[firstTrackElement * 16 + _i5] = getDataB[_i5];
+                data[secondTrackElement * 16 + _i5] = getDataA[_i5];
             }
 
             if (isFinalElement) {
                 // Set last tile element flags
-                for (var _i5 = 0; _i5 < tile.numElements; _i5++) {
-                    data[_i5 * 16 + 1] &= ~128;
-                    if (_i5 == tile.numElements - 1) {
-                        data[_i5 * 16 + 1] |= 128;
+                for (var _i6 = 0; _i6 < tile.numElements; _i6++) {
+                    data[_i6 * 16 + 1] &= ~128;
+                    if (_i6 == tile.numElements - 1) {
+                        data[_i6 * 16 + 1] |= 128;
                     }
                 }
             }
@@ -3097,6 +3122,8 @@ var VehicleSensor = function (_Trigger) {
         _this24.rideId = -1;
         _this24.x = -1;
         _this24.y = -1;
+
+        _this24.method = 0;
 
         _this24._sensedEntityId = -1;
         return _this24;
@@ -3125,20 +3152,40 @@ var VehicleSensor = function (_Trigger) {
         value: function test(car) {
             if (car.ride != this.rideId) return false;
 
-            if (car.nextCarOnTrain != null) // Last car on the train
+            if (this.method == 1 && car.nextCarOnTrain != null) // Last car on the train
                 return false;
+
+            if (this.method == 0) {
+                if (car.previousCarOnRide != car.id) {
+                    // Only car on the train
+                    // Check if this is the front car
+                    var previousCar = map.getEntity(car.previousCarOnRide);
+                    if (previousCar.nextCarOnTrain != null) {
+                        return false;
+                    }
+                }
+            }
 
             if (this._sensedEntityId >= 0) {
                 if (Math.floor(car.x / 32) != this.x || Math.floor(car.y / 32) != this.y) {
                     if (this._sensedEntityId == car.id) {
                         this._sensedEntityId = -1;
-                        this.element.action.perform();
-                        return true;
+
+                        if (this.method == 1) {
+                            this.element.action.perform();
+                            return true;
+                        }
+                        return false;
                     }
                 }
             } else {
                 if (Math.floor(car.x / 32) == this.x && Math.floor(car.y / 32) == this.y) {
                     this._sensedEntityId = car.id;
+
+                    if (this.method == 0) {
+                        this.element.action.perform();
+                        return true;
+                    }
                 }
             }
             return false;
@@ -3149,7 +3196,8 @@ var VehicleSensor = function (_Trigger) {
             return {
                 rideId: this.rideId,
                 x: this.x,
-                y: this.y
+                y: this.y,
+                method: this.method
             };
         }
     }, {
@@ -3158,6 +3206,12 @@ var VehicleSensor = function (_Trigger) {
             this.rideId = data.rideId;
             this.x = data.x;
             this.y = data.y;
+
+            if (data.method != null) {
+                this.method = data.method;
+            } else {
+                this.method = 1;
+            }
         }
     }, {
         key: "createWidget",
@@ -3191,8 +3245,22 @@ var VehicleSensor = function (_Trigger) {
                 _this25.isValid();
                 statusLabel.setText(_this25.validationMessage);
             });
-            sensorLoc.element._marginTop += 8;
             box.addChild(sensorLoc.element);
+
+            var methodForm = new Oui.HorizontalBox();
+            methodForm.setPadding(0, 0, 0, 0);
+            box.addChild(methodForm);
+
+            var methodLabel = new Oui.Widgets.Label("Trigger when the:");
+            methodLabel.setWidth(100);
+            methodForm.addChild(methodLabel);
+
+            var method = new Oui.Widgets.Dropdown(["Train enters the sensor", "Train exits the sensor"], function (index) {
+                _this25.method = index;
+            });
+            method.setSelectedItem(this.method);
+            methodForm.addChild(method);
+            methodForm.setRemainingWidthFiller(method);
 
             box.addChild(statusLabel);
 
@@ -3263,7 +3331,7 @@ var SwitchTrack = function (_Action) {
     }, {
         key: "perform",
         value: function perform() {
-            console.log("Switch! ", this.x, this.y);
+            console.log("Switcharoo");
             MapHelper.SwitchTrackElements(map.getTile(this.x, this.y));
         }
     }, {
@@ -3306,7 +3374,6 @@ var SwitchTrack = function (_Action) {
                 _this27.isValid();
                 statusLabel.setText(_this27.validationMessage);
             });
-            switchLoc.element._marginTop += 8;
             box.addChild(switchLoc.element);
 
             box.addChild(statusLabel);
@@ -3316,6 +3383,99 @@ var SwitchTrack = function (_Action) {
     }]);
 
     return SwitchTrack;
+}(Action);
+
+var SetBlockBrake = function (_Action2) {
+    _inherits(SetBlockBrake, _Action2);
+
+    function SetBlockBrake(element) {
+        _classCallCheck(this, SetBlockBrake);
+
+        var _this28 = _possibleConstructorReturn(this, (SetBlockBrake.__proto__ || Object.getPrototypeOf(SetBlockBrake)).call(this, element));
+
+        _this28.x = -1;
+        _this28.y = -1;
+        _this28.block = false;
+        return _this28;
+    }
+
+    _createClass(SetBlockBrake, [{
+        key: "isValid",
+        value: function isValid() {
+            if (this.x == -1 || this.y == -1) {
+                this.validationMessage = "Block brake location has not been set";
+                return false;
+            }
+            if (!MapHelper.GetTrackElement(map.getTile(this.x, this.y))) {
+                this.validationMessage = "There is no track at the set location";
+                return false;
+            }
+            this.validationMessage = "Block brake is ready to go";
+            return true;
+        }
+    }, {
+        key: "perform",
+        value: function perform() {
+            MapHelper.SetBlockBrake(map.getTile(this.x, this.y), this.block);
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                x: this.x,
+                y: this.y,
+                block: this.block
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.x = data.x;
+            this.y = data.y;
+            this.block = data.block;
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {
+            var _this29 = this;
+
+            var that = this;
+            var box = new Oui.VerticalBox();
+            box.setPadding(0, 0, 0, 0);
+
+            {
+                var info = new Oui.Widgets.Label("Block or unblocks a block brake");
+                box.addChild(info);
+            }
+            {
+                var _info3 = new Oui.Widgets.Label("when triggered.");
+                box.addChild(_info3);
+            }
+
+            this.isValid();
+            var statusLabel = new Oui.Widgets.Label(this.validationMessage);
+
+            var switchLoc = new LocationPromptWidget("Block Brake:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+                _this29.x = x;
+                _this29.y = y;
+                _this29.isValid();
+                statusLabel.setText(_this29.validationMessage);
+            });
+            box.addChild(switchLoc.element);
+
+            var checkBox = new Oui.Widgets.Dropdown(["Set to open", "Set to closed"], function (val) {
+                that.block = val > 0;
+            });
+            checkBox.setSelectedItem(this.block + 0);
+            box.addChild(checkBox);
+
+            box.addChild(statusLabel);
+
+            return box;
+        }
+    }]);
+
+    return SetBlockBrake;
 }(Action);
 
 var Element$1 = function () {
@@ -3379,9 +3539,9 @@ Element$1.TriggerTypes = [VehicleSensor];
 
 Element$1.TriggerTypeNames = ["Vehicle Sensor"];
 
-Element$1.ActionTypes = [SwitchTrack];
+Element$1.ActionTypes = [SwitchTrack, SetBlockBrake];
 
-Element$1.ActionTypeNames = ["Switch Track"];
+Element$1.ActionTypeNames = ["Switch Track", "Set Block Brake"];
 
 var AdvancedTrackManager = function () {
     function AdvancedTrackManager(parkData) {
@@ -3561,8 +3721,6 @@ var AdvancedTrackWindow = function () {
     }, {
         key: "createWindow",
         value: function createWindow() {
-            var _this28 = this;
-
             var that = this;
 
             var infoRight = null;
@@ -3664,14 +3822,14 @@ var AdvancedTrackWindow = function () {
             bottom.setRemainingWidthFiller(filler);
 
             var elementTypes = new Oui.Widgets.Dropdown(Element$1.TriggerTypeNames, function (index) {
-                _this28.selectedTriggerType = index;
+                that.selectedTriggerType = index;
             });
             elementTypes.setWidth(100);
             elementTypes.setHeight(13);
             bottom.addChild(elementTypes);
 
             var elementReactionTypes = new Oui.Widgets.Dropdown(Element$1.ActionTypeNames, function (index) {
-                _this28.selectedReactionType = index;
+                that.selectedReactionType = index;
             });
             elementReactionTypes.setWidth(100);
             elementReactionTypes.setHeight(13);
