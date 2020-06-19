@@ -3058,45 +3058,41 @@ var MapHelper = function () {
     }, {
         key: "SwitchTrackElements",
         value: function SwitchTrackElements(tile) {
-            var firstTrackElement = -1;
-            var secondTrackElement = -1;
+            var trackElements = [];
             for (var i = 0; i < tile.numElements; i++) {
                 var element = tile.getElement(i);
                 if (element.type == "track") {
-                    if (firstTrackElement < 0) {
-                        firstTrackElement = i;
-                    } else {
-                        secondTrackElement = i;
-                        break;
-                    }
+                    trackElements.push(i);
                 }
             }
-            if (firstTrackElement < 0 || secondTrackElement < 0) return false;
 
-            var isFinalElement = MapHelper.GetFlag(tile, secondTrackElement, 128);
+            if (trackElements.length == 0) {
+                return false;
+            }
 
             var data = tile.data;
-
-            var getDataA = new Uint8Array(16);
-            for (var _i3 = 0; _i3 < 16; _i3++) {
-                getDataA[_i3] = data[firstTrackElement * 16 + _i3];
-            }
-            var getDataB = new Uint8Array(16);
-            for (var _i4 = 0; _i4 < 16; _i4++) {
-                getDataB[_i4] = data[secondTrackElement * 16 + _i4];
-            }
-            for (var _i5 = 0; _i5 < 16; _i5++) {
-                data[firstTrackElement * 16 + _i5] = getDataB[_i5];
-                data[secondTrackElement * 16 + _i5] = getDataA[_i5];
+            var trackData = [];
+            for (var _i3 = 0; _i3 < trackElements.length; _i3++) {
+                var a = new Uint8Array(16);
+                for (var j = 0; j < 16; j++) {
+                    a[j] = data[trackElements[_i3] * 16 + j];
+                }
+                trackData.push(a);
             }
 
-            if (isFinalElement) {
-                // Set last tile element flags
-                for (var _i6 = 0; _i6 < tile.numElements; _i6++) {
-                    data[_i6 * 16 + 1] &= ~128;
-                    if (_i6 == tile.numElements - 1) {
-                        data[_i6 * 16 + 1] |= 128;
-                    }
+            var prev = trackElements.length - 1;
+            for (var _i4 = 0; _i4 < trackElements.length; _i4++) {
+                for (var _j = 0; _j < 16; _j++) {
+                    data[trackElements[_i4] * 16 + _j] = trackData[prev][_j];
+                }
+                prev = _i4;
+            }
+
+            // Set last tile element flags
+            for (var _i5 = 0; _i5 < tile.numElements; _i5++) {
+                data[_i5 * 16 + 1] &= ~128;
+                if (_i5 == tile.numElements - 1) {
+                    data[_i5 * 16 + 1] |= 128;
                 }
             }
 
@@ -3331,7 +3327,6 @@ var SwitchTrack = function (_Action) {
     }, {
         key: "perform",
         value: function perform() {
-            console.log("Switcharoo");
             MapHelper.SwitchTrackElements(map.getTile(this.x, this.y));
         }
     }, {
@@ -3732,8 +3727,8 @@ var AdvancedTrackWindow = function () {
             window._paddingLeft = 6;
             window._paddingRight = 6;
             window.setWidth(400);
-            window.setHorizontalResize(true, 300, 600);
-            window.setHeight(200);
+            window.setHorizontalResize(true, 344, 600);
+            window.setHeight(250);
             window.setVerticalResize(true, 200, 600);
             window.setOnClose(function () {
                 infoRight.setIsDisabled(true);
@@ -3745,8 +3740,12 @@ var AdvancedTrackWindow = function () {
             }
             {
                 var _label = new Oui.Widgets.Label("Changes are saved automatically upon making changes. Use with care.");
-                _label._marginBottom = 8;
                 window.addChild(_label);
+            }
+            {
+                var _label2 = new Oui.Widgets.Label("Advanced Track save data does NOT transfer from user to user.");
+                _label2._marginBottom = 8;
+                window.addChild(_label2);
             }
 
             var listView = new Oui.Widgets.ListView();
@@ -3815,23 +3814,38 @@ var AdvancedTrackWindow = function () {
             });
 
             var bottom = new Oui.HorizontalBox();
+            bottom.setPadding(0, 0, 0, 0);
             window.addChild(bottom);
 
             var filler = new Oui.VerticalBox();
             bottom.addChild(filler);
             bottom.setRemainingWidthFiller(filler);
 
+            {
+                var _label3 = new Oui.Widgets.Label("Trigger:");
+                _label3.setWidth(45);
+                bottom.addChild(_label3);
+            }
+
             var elementTypes = new Oui.Widgets.Dropdown(Element$1.TriggerTypeNames, function (index) {
                 that.selectedTriggerType = index;
             });
             elementTypes.setWidth(100);
+            elementTypes._marginRight = 4;
             elementTypes.setHeight(13);
             bottom.addChild(elementTypes);
+
+            {
+                var _label4 = new Oui.Widgets.Label("Action:");
+                _label4.setWidth(40);
+                bottom.addChild(_label4);
+            }
 
             var elementReactionTypes = new Oui.Widgets.Dropdown(Element$1.ActionTypeNames, function (index) {
                 that.selectedReactionType = index;
             });
             elementReactionTypes.setWidth(100);
+            elementReactionTypes._marginRight = 4;
             elementReactionTypes.setHeight(13);
             bottom.addChild(elementReactionTypes);
 
@@ -3839,8 +3853,8 @@ var AdvancedTrackWindow = function () {
                 var newElement = new Element$1(that.advancedTrackManager, that.selectedTriggerType, that.selectedReactionType);
                 that.openEditWindow(newElement);
             });
+            addButton.setWidth(80);
             addButton.setHeight(13);
-            addButton.setWidth(100);
             bottom.addChild(addButton);
 
             return window;

@@ -40,8 +40,8 @@ class AdvancedTrackWindow {
         window._paddingLeft = 6;
         window._paddingRight = 6;
         window.setWidth(400);
-        window.setHorizontalResize(true, 300, 600);
-        window.setHeight(200);
+        window.setHorizontalResize(true, 344, 600);
+        window.setHeight(250);
         window.setVerticalResize(true, 200, 600);
         window.setOnClose(() => {
             infoRight.setIsDisabled(true);
@@ -53,6 +53,10 @@ class AdvancedTrackWindow {
         }
         {
             let label = new Oui.Widgets.Label("Changes are saved automatically upon making changes. Use with care.");
+            window.addChild(label);
+        }
+        {
+            let label = new Oui.Widgets.Label("Advanced Track save data does NOT transfer from user to user.");
             label._marginBottom = 8;
             window.addChild(label);
         }
@@ -131,23 +135,38 @@ class AdvancedTrackWindow {
         });
 
         let bottom = new Oui.HorizontalBox();
+        bottom.setPadding(0, 0, 0, 0);
         window.addChild(bottom);
 
         let filler = new Oui.VerticalBox();
         bottom.addChild(filler);
         bottom.setRemainingWidthFiller(filler);
 
+        {
+            let label = new Oui.Widgets.Label("Trigger:");
+            label.setWidth(45);
+            bottom.addChild(label);
+        }
+
         let elementTypes = new Oui.Widgets.Dropdown(Element.TriggerTypeNames, (index) => {
             that.selectedTriggerType = index;
         })
         elementTypes.setWidth(100);
+        elementTypes._marginRight = 4;
         elementTypes.setHeight(13);
         bottom.addChild(elementTypes);
+
+        {
+            let label = new Oui.Widgets.Label("Action:");
+            label.setWidth(40);
+            bottom.addChild(label);
+        }
 
         let elementReactionTypes = new Oui.Widgets.Dropdown(Element.ActionTypeNames, (index) => {
             that.selectedReactionType = index;
         })
         elementReactionTypes.setWidth(100);
+        elementReactionTypes._marginRight = 4;
         elementReactionTypes.setHeight(13);
         bottom.addChild(elementReactionTypes);
 
@@ -155,8 +174,8 @@ class AdvancedTrackWindow {
             let newElement = new Element(that.advancedTrackManager, that.selectedTriggerType, that.selectedReactionType);
             that.openEditWindow(newElement);
         });
+        addButton.setWidth(80);
         addButton.setHeight(13);
-        addButton.setWidth(100);
         bottom.addChild(addButton);
 
         return window;

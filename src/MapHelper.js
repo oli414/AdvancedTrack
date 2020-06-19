@@ -131,47 +131,41 @@ class MapHelper {
     }
 
     static SwitchTrackElements(tile) {
-        let firstTrackElement = -1;
-        let secondTrackElement = -1;
+        let trackElements = [];
         for (let i = 0; i < tile.numElements; i++) {
             let element = tile.getElement(i);
             if (element.type == "track") {
-                if (firstTrackElement < 0) {
-                    firstTrackElement = i;
-                }
-                else {
-                    secondTrackElement = i;
-                    break;
-                }
+                trackElements.push(i);
             }
         }
-        if (firstTrackElement < 0 || secondTrackElement < 0)
-            return false;
 
-        let isFinalElement = MapHelper.GetFlag(tile, secondTrackElement, 128);
+        if (trackElements.length == 0) {
+            return false;
+        }
 
         let data = tile.data;
-
-        let getDataA = new Uint8Array(16);
-        for (let i = 0; i < 16; i++) {
-            getDataA[i] = data[firstTrackElement * 16 + i];
-        }
-        let getDataB = new Uint8Array(16);
-        for (let i = 0; i < 16; i++) {
-            getDataB[i] = data[secondTrackElement * 16 + i];
-        }
-        for (let i = 0; i < 16; i++) {
-            data[firstTrackElement * 16 + i] = getDataB[i];
-            data[secondTrackElement * 16 + i] = getDataA[i];
+        let trackData = [];
+        for (let i = 0; i < trackElements.length; i++) {
+            let a = new Uint8Array(16);
+            for (let j = 0; j < 16; j++) {
+                a[j] = data[trackElements[i] * 16 + j];
+            }
+            trackData.push(a);
         }
 
-        if (isFinalElement) {
-            // Set last tile element flags
-            for (let i = 0; i < tile.numElements; i++) {
-                data[i * 16 + 1] &= ~128;
-                if (i == tile.numElements - 1) {
-                    data[i * 16 + 1] |= 128;
-                }
+        let prev = trackElements.length - 1;
+        for (let i = 0; i < trackElements.length; i++) {
+            for (let j = 0; j < 16; j++) {
+                data[trackElements[i] * 16 + j] = trackData[prev][j];
+            }
+            prev = i;
+        }
+
+        // Set last tile element flags
+        for (let i = 0; i < tile.numElements; i++) {
+            data[i * 16 + 1] &= ~128;
+            if (i == tile.numElements - 1) {
+                data[i * 16 + 1] |= 128;
             }
         }
 
