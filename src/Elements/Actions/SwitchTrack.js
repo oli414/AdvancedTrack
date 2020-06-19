@@ -25,6 +25,7 @@ class SwitchTrack extends Action {
     }
 
     perform() {
+        console.log("Switch! ", this.x, this.y);
         MapHelper.SwitchTrackElements(map.getTile(this.x, this.y));
     }
 

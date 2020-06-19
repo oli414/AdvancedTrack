@@ -40,7 +40,7 @@ class VehicleSensor extends Trigger {
             return false;
 
         if (this._sensedEntityId >= 0) {
-            if (Math.floor(car.x / 32) != this.x && Math.floor(car.y / 32) != this.y) {
+            if (Math.floor(car.x / 32) != this.x || Math.floor(car.y / 32) != this.y) {
                 if (this._sensedEntityId == car.id) {
                     this._sensedEntityId = -1;
                     this.element.action.perform();

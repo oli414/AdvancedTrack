@@ -21,22 +21,29 @@ class LocationPromptWidget {
 
         let promptLocationButton = new Oui.Widgets.ImageButton(5504, () => {
             if (!promptLocationButton.isPressed()) {
+                statusLabel.setText("Select a tile...");
                 locationPrompt.prompt((x, y) => {
-                    this.currentLocationX = x;
-                    this.currentLocationY = y;
+                    that.currentLocationX = x;
+                    that.currentLocationY = y;
                     locateButton.setIsDisabled(false);
                     promptLocationButton.setIsPressed(false);
                     statusLabel.setText("Location set (x: " + x + ", y: " + y + ")");
                     //statusLabel.setTooltip("x: " + x + ", y: " + y);
-                    this.isSet = true;
-                    if (this.onSet)
-                        this.onSet(x, y);
+                    that.isSet = true;
+                    if (that.onSet)
+                        that.onSet(x, y);
                 }, () => {
                     promptLocationButton.setIsPressed(false);
                 });
                 promptLocationButton.setIsPressed(true);
             }
             else {
+                if (that.isSet) {
+                    statusLabel.setText("Location set (x: " + that.currentLocationX + ", y: " + that.currentLocationY + ")");
+                }
+                else {
+                    statusLabel.setText("No location");
+                }
                 locationPrompt.cancel();
                 promptLocationButton.setIsPressed(false);
             }

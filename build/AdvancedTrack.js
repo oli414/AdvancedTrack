@@ -22,6 +22,8 @@ var LocationPrompt = function () {
         this.onCancelled = null;
 
         this.selectedCoords = { x: 0, y: 0 };
+
+        this.hasGridOn = false;
     }
 
     _createClass(LocationPrompt, [{
@@ -2831,8 +2833,6 @@ var LocationPromptWidget = function () {
     _createClass(LocationPromptWidget, [{
         key: "_createElements",
         value: function _createElements(text, locationPrompt) {
-            var _this24 = this;
-
             var that = this;
             var horizontalBox = new Oui.HorizontalBox();
             horizontalBox.setPadding(0, 0, 0, 0);
@@ -2841,20 +2841,26 @@ var LocationPromptWidget = function () {
 
             var promptLocationButton = new Oui.Widgets.ImageButton(5504, function () {
                 if (!promptLocationButton.isPressed()) {
+                    statusLabel.setText("Select a tile...");
                     locationPrompt.prompt(function (x, y) {
-                        _this24.currentLocationX = x;
-                        _this24.currentLocationY = y;
+                        that.currentLocationX = x;
+                        that.currentLocationY = y;
                         locateButton.setIsDisabled(false);
                         promptLocationButton.setIsPressed(false);
                         statusLabel.setText("Location set (x: " + x + ", y: " + y + ")");
                         //statusLabel.setTooltip("x: " + x + ", y: " + y);
-                        _this24.isSet = true;
-                        if (_this24.onSet) _this24.onSet(x, y);
+                        that.isSet = true;
+                        if (that.onSet) that.onSet(x, y);
                     }, function () {
                         promptLocationButton.setIsPressed(false);
                     });
                     promptLocationButton.setIsPressed(true);
                 } else {
+                    if (that.isSet) {
+                        statusLabel.setText("Location set (x: " + that.currentLocationX + ", y: " + that.currentLocationY + ")");
+                    } else {
+                        statusLabel.setText("No location");
+                    }
                     locationPrompt.cancel();
                     promptLocationButton.setIsPressed(false);
                 }
@@ -3084,16 +3090,16 @@ var VehicleSensor = function (_Trigger) {
     function VehicleSensor(element) {
         _classCallCheck(this, VehicleSensor);
 
-        var _this25 = _possibleConstructorReturn(this, (VehicleSensor.__proto__ || Object.getPrototypeOf(VehicleSensor)).call(this, element));
+        var _this24 = _possibleConstructorReturn(this, (VehicleSensor.__proto__ || Object.getPrototypeOf(VehicleSensor)).call(this, element));
 
-        _this25.element = element;
+        _this24.element = element;
 
-        _this25.rideId = -1;
-        _this25.x = -1;
-        _this25.y = -1;
+        _this24.rideId = -1;
+        _this24.x = -1;
+        _this24.y = -1;
 
-        _this25._sensedEntityId = -1;
-        return _this25;
+        _this24._sensedEntityId = -1;
+        return _this24;
     }
 
     _createClass(VehicleSensor, [{
@@ -3123,7 +3129,7 @@ var VehicleSensor = function (_Trigger) {
                 return false;
 
             if (this._sensedEntityId >= 0) {
-                if (Math.floor(car.x / 32) != this.x && Math.floor(car.y / 32) != this.y) {
+                if (Math.floor(car.x / 32) != this.x || Math.floor(car.y / 32) != this.y) {
                     if (this._sensedEntityId == car.id) {
                         this._sensedEntityId = -1;
                         this.element.action.perform();
@@ -3156,7 +3162,7 @@ var VehicleSensor = function (_Trigger) {
     }, {
         key: "createWidget",
         value: function createWidget() {
-            var _this26 = this;
+            var _this25 = this;
 
             var box = new Oui.VerticalBox();
             box.setPadding(0, 0, 0, 0);
@@ -3176,14 +3182,14 @@ var VehicleSensor = function (_Trigger) {
             var sensorLoc = new LocationPromptWidget("Vehicle Sensor:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
                 var track = MapHelper.GetTrackElement(map.getTile(x, y));
                 if (track) {
-                    _this26.rideId = track.ride;
+                    _this25.rideId = track.ride;
                 } else {
-                    _this26.rideId = -1;
+                    _this25.rideId = -1;
                 }
-                _this26.x = x;
-                _this26.y = y;
-                _this26.isValid();
-                statusLabel.setText(_this26.validationMessage);
+                _this25.x = x;
+                _this25.y = y;
+                _this25.isValid();
+                statusLabel.setText(_this25.validationMessage);
             });
             sensorLoc.element._marginTop += 8;
             box.addChild(sensorLoc.element);
@@ -3233,11 +3239,11 @@ var SwitchTrack = function (_Action) {
     function SwitchTrack(element) {
         _classCallCheck(this, SwitchTrack);
 
-        var _this27 = _possibleConstructorReturn(this, (SwitchTrack.__proto__ || Object.getPrototypeOf(SwitchTrack)).call(this, element));
+        var _this26 = _possibleConstructorReturn(this, (SwitchTrack.__proto__ || Object.getPrototypeOf(SwitchTrack)).call(this, element));
 
-        _this27.x = -1;
-        _this27.y = -1;
-        return _this27;
+        _this26.x = -1;
+        _this26.y = -1;
+        return _this26;
     }
 
     _createClass(SwitchTrack, [{
@@ -3257,6 +3263,7 @@ var SwitchTrack = function (_Action) {
     }, {
         key: "perform",
         value: function perform() {
+            console.log("Switch! ", this.x, this.y);
             MapHelper.SwitchTrackElements(map.getTile(this.x, this.y));
         }
     }, {
@@ -3276,7 +3283,7 @@ var SwitchTrack = function (_Action) {
     }, {
         key: "createWidget",
         value: function createWidget() {
-            var _this28 = this;
+            var _this27 = this;
 
             var box = new Oui.VerticalBox();
             box.setPadding(0, 0, 0, 0);
@@ -3294,10 +3301,10 @@ var SwitchTrack = function (_Action) {
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
             var switchLoc = new LocationPromptWidget("Switch Track:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
-                _this28.x = x;
-                _this28.y = y;
-                _this28.isValid();
-                statusLabel.setText(_this28.validationMessage);
+                _this27.x = x;
+                _this27.y = y;
+                _this27.isValid();
+                statusLabel.setText(_this27.validationMessage);
             });
             switchLoc.element._marginTop += 8;
             box.addChild(switchLoc.element);
@@ -3554,7 +3561,7 @@ var AdvancedTrackWindow = function () {
     }, {
         key: "createWindow",
         value: function createWindow() {
-            var _this29 = this;
+            var _this28 = this;
 
             var that = this;
 
@@ -3657,14 +3664,14 @@ var AdvancedTrackWindow = function () {
             bottom.setRemainingWidthFiller(filler);
 
             var elementTypes = new Oui.Widgets.Dropdown(Element$1.TriggerTypeNames, function (index) {
-                _this29.selectedTriggerType = index;
+                _this28.selectedTriggerType = index;
             });
             elementTypes.setWidth(100);
             elementTypes.setHeight(13);
             bottom.addChild(elementTypes);
 
             var elementReactionTypes = new Oui.Widgets.Dropdown(Element$1.ActionTypeNames, function (index) {
-                _this29.selectedReactionType = index;
+                _this28.selectedReactionType = index;
             });
             elementReactionTypes.setWidth(100);
             elementReactionTypes.setHeight(13);

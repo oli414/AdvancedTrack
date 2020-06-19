@@ -6,6 +6,8 @@ class LocationPrompt {
         this.onCancelled = null;
 
         this.selectedCoords = { x: 0, y: 0 };
+
+        this.hasGridOn = false;
     }
 
     setSelectionRange(start, end) {
