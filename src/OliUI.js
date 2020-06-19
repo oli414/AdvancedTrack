@@ -999,7 +999,7 @@ class GroupBox extends VerticalBox {
         return this._text;
     }
 
-    /**
+    /** 
      * Set the groupbox label text. Set to an empty string to remove the label text.
      * @param {string} text
      */
@@ -2066,15 +2066,15 @@ class ViewportWidget extends Widget {
     _getDescription() {
         let desc = super._getDescription();
         this._initMove = true;
-        this.requestRefresh();
+        this.requestSync();
         return desc;
     }
 
     _applyDescription(handle, desc) {
         super._applyDescription(handle, desc);
-        handle.viewport.rotation = this._rotation;
-        handle.viewport.zoom = this._zoom;
-        handle.viewport.visibilityFlags = this._visibilityFlags;
+        //handle.viewport.rotation = this._rotation;
+        //handle.viewport.zoom = this._zoom;
+        //handle.viewport.visibilityFlags = this._visibilityFlags;
 
         if (this._initMove) {
             handle.viewport.moveTo({ x: this._viewX, y: this._viewY });

@@ -93,10 +93,10 @@ class AdvancedTrackWindow {
 
 
         /*
-        let viewport = new Oui.Widgets.ViewportWidget();
-        viewport.setWidth(160);
-        viewport.setRelativeHeight(100);
-        infoBar.addChild(viewport);*/
+                let viewport = new Oui.Widgets.ViewportWidget();
+                viewport.setRelativeWidth(50);
+                viewport.setRelativeHeight(100);
+                infoBar.addChild(viewport);*/
 
         infoRight = new Oui.GroupBox("Element");
         infoRight.setRelativeHeight(100);

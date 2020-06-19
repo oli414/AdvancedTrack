@@ -1336,7 +1336,7 @@ var GroupBox = function (_VerticalBox2) {
             return this._text;
         }
 
-        /**
+        /** 
          * Set the groupbox label text. Set to an empty string to remove the label text.
          * @param {string} text
          */
@@ -2740,16 +2740,16 @@ var ViewportWidget = function (_Widget7) {
         value: function _getDescription() {
             var desc = _get(ViewportWidget.prototype.__proto__ || Object.getPrototypeOf(ViewportWidget.prototype), "_getDescription", this).call(this);
             this._initMove = true;
-            this.requestRefresh();
+            this.requestSync();
             return desc;
         }
     }, {
         key: "_applyDescription",
         value: function _applyDescription(handle, desc) {
             _get(ViewportWidget.prototype.__proto__ || Object.getPrototypeOf(ViewportWidget.prototype), "_applyDescription", this).call(this, handle, desc);
-            handle.viewport.rotation = this._rotation;
-            handle.viewport.zoom = this._zoom;
-            handle.viewport.visibilityFlags = this._visibilityFlags;
+            //handle.viewport.rotation = this._rotation;
+            //handle.viewport.zoom = this._zoom;
+            //handle.viewport.visibilityFlags = this._visibilityFlags;
 
             if (this._initMove) {
                 handle.viewport.moveTo({ x: this._viewX, y: this._viewY });
@@ -3773,10 +3773,10 @@ var AdvancedTrackWindow = function () {
             window.addChild(infoBar);
 
             /*
-            let viewport = new Oui.Widgets.ViewportWidget();
-            viewport.setWidth(160);
-            viewport.setRelativeHeight(100);
-            infoBar.addChild(viewport);*/
+                    let viewport = new Oui.Widgets.ViewportWidget();
+                    viewport.setRelativeWidth(50);
+                    viewport.setRelativeHeight(100);
+                    infoBar.addChild(viewport);*/
 
             infoRight = new Oui.GroupBox("Element");
             infoRight.setRelativeHeight(100);
