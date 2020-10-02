@@ -9,7 +9,9 @@ You can select a location for a vehicle sensor, and the location of a switch tra
 This can in turn be used to create complex systems like a functional dual loading stations, or alternating track routes.
 
 ## Installation
-Copy the JS file in the `build` directory from this repository to `OpenRCT2/plugin`, you can access the tools via the map toolbar.
+Download the latest `AdvancedTrack.js` file from the releases page:
+https://github.com/oli414/AdvancedTrack/releases/
+And place it in `OpenRCT2/plugin`, you can now access the tools via the map toolbar.
 
 Check my tutorial if you're new to Plugins and/or Github:
 https://youtu.be/ZaM5pXDO03w?t=355
