@@ -14,7 +14,7 @@ class VehicleSensor extends Trigger {
 
         this.method = 0;
 
-        this._sensedEntityId = -1;
+        this._sensedEntityIds = [];
     }
 
     isValid() {
@@ -33,46 +33,52 @@ class VehicleSensor extends Trigger {
         this.validationMessage = "Vehicle sensor is ready to go";
         return true;
     }
+    
+    addSensedEntity(id) {
+        this._sensedEntityIds.push(id);
+    }
+    
+    hasSensedEntity(id) {
+        return this._sensedEntityIds.indexOf(id) >= 0;
+    }
+    
+    removeSensedEntity(id) {
+        const index = this._sensedEntityIds.indexOf(id);
+        if (index > -1) {
+            this._sensedEntityIds.splice(index, 1);
+        }
+    }
 
-    test(car) {
-        if (car.ride != this.rideId)
-            return false;
-
-        if (this.method == 1 && car.nextCarOnTrain != null) // Last car on the train
-            return false;
-
-        if (this.method == 0) {
-            if (car.previousCarOnRide != car.id) { // Only car on the train
-                // Check if this is the front car
-                let previousCar = map.getEntity(car.previousCarOnRide);
-                if (previousCar.nextCarOnTrain != null) {
-                    return false;
-                }
+    test(carDetails) {
+        let trainGoingForwards = carDetails.velocity > 0;
+        let carIsOnTile = Math.floor(carDetails.car.x / 32) == this.x && Math.floor(carDetails.car.y / 32) == this.y;
+        
+        if (carIsOnTile && !this.hasSensedEntity(carDetails.car.id)) {
+            // Train entered tile
+            this.addSensedEntity(carDetails.car.id);
+            
+            // Trigger on train entered, depending on the direction of travel check if the
+            // first or last car entered the tile.
+            if (this.method == 0 && 
+                ((trainGoingForwards && carDetails.isFirstCarOfTrain) || 
+                (!trainGoingForwards && carDetails.isLastCarOfTrain)))
+            {
+                this.element.action.perform();
+                return true;
             }
         }
-
-
-        if (this._sensedEntityId >= 0) {
-            if (Math.floor(car.x / 32) != this.x || Math.floor(car.y / 32) != this.y) {
-                if (this._sensedEntityId == car.id) {
-                    this._sensedEntityId = -1;
-
-                    if (this.method == 1) {
-                        this.element.action.perform();
-                        return true;
-                    }
-                    return false;
-                }
-            }
-        }
-        else {
-            if (Math.floor(car.x / 32) == this.x && Math.floor(car.y / 32) == this.y) {
-                this._sensedEntityId = car.id;
-
-                if (this.method == 0) {
-                    this.element.action.perform();
-                    return true;
-                }
+        else if (!carIsOnTile && this.hasSensedEntity(carDetails.car.id)) {
+            // Train exited tile
+            this.removeSensedEntity(carDetails.car.id);
+            
+            // Trigger on train entered, depending on the direction of travel check if the
+            // first or last car exited the tile.
+            if (this.method == 1 && 
+                ((trainGoingForwards && carDetails.isLastCarOfTrain) || 
+                (!trainGoingForwards && carDetails.isFirstCarOfTrain)))
+            {
+                this.element.action.perform();
+                return true;
             }
         }
         return false;

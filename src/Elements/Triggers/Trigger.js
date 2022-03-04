@@ -10,7 +10,7 @@ class Trigger {
         return true;
     }
 
-    test(car) {
+    test(carDetails) {
         return false;
     }
 

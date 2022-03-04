@@ -39,8 +39,8 @@ class AdvancedTrackWindow {
         window._paddingTop = 16 + 6;
         window._paddingLeft = 6;
         window._paddingRight = 6;
-        window.setWidth(400);
-        window.setHorizontalResize(true, 344, 600);
+        window.setWidth(500);
+        window.setHorizontalResize(true, 500, 800);
         window.setHeight(250);
         window.setVerticalResize(true, 200, 600);
         window.setOnClose(() => {
@@ -48,15 +48,15 @@ class AdvancedTrackWindow {
         });
 
         {
-            let label = new Oui.Widgets.Label("Advanced Track save data is linked to the park name, NOT to the save file");
+            let label = new Oui.Widgets.Label("Advanced Track allows you to affect a ride's course based on a set");
             window.addChild(label);
         }
         {
-            let label = new Oui.Widgets.Label("Changes are saved automatically upon making changes. Use with care.");
+            let label = new Oui.Widgets.Label("condition, like a train going over a specific tile. This can be used to create");
             window.addChild(label);
         }
         {
-            let label = new Oui.Widgets.Label("Advanced Track save data does NOT transfer from user to user.");
+            let label = new Oui.Widgets.Label("things like transfer tracks. Or creative block brake usage.");
             label._marginBottom = 8;
             window.addChild(label);
         }
@@ -165,7 +165,7 @@ class AdvancedTrackWindow {
         let elementReactionTypes = new Oui.Widgets.Dropdown(Element.ActionTypeNames, (index) => {
             that.selectedReactionType = index;
         })
-        elementReactionTypes.setWidth(100);
+        elementReactionTypes.setWidth(200);
         elementReactionTypes._marginRight = 4;
         elementReactionTypes.setHeight(13);
         bottom.addChild(elementReactionTypes);

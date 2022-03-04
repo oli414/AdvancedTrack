@@ -1,6 +1,9 @@
 import VehicleSensor from "./Triggers/VehicleSensor";
 import SwitchTrack from "./Actions/SwitchTrack";
 import SetBlockBrake from "./Actions/SetBlockBrake";
+import SetLiftSpeed from "./Actions/SetLiftSpeed";
+import SetChainLift from "./Actions/SetChainLift";
+import SetBrakeBoosterSpeed from "./Actions/SetBrakeBoosterSpeed";
 
 class Element {
     constructor(manager, triggerType, actionType) {
@@ -29,8 +32,8 @@ class Element {
         return a;
     }
 
-    test(car) {
-        this.trigger.test(car);
+    test(carDetails) {
+        this.trigger.test(carDetails);
     }
 
     serialize() {
@@ -59,12 +62,18 @@ Element.TriggerTypeNames = [
 
 Element.ActionTypes = [
     SwitchTrack,
-    SetBlockBrake
+    SetBlockBrake,
+    SetChainLift,
+    SetLiftSpeed,
+    SetBrakeBoosterSpeed
 ];
 
 Element.ActionTypeNames = [
     "Switch Track",
-    "Set Block Brake"
+    "Set Block Brake",
+    "Set Chain Lift",
+    "Set Chain Lift Speed",
+    "Set Brake/Booster Speed"
 ];
 
 export default Element;

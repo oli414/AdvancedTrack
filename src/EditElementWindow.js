@@ -23,7 +23,7 @@ class EditElementWindow {
             that.locationPrompt.cancel();
         });
 
-        let labelTriggerExpl = new Oui.Widgets.Label("The trigger is the cause for of an action");
+        let labelTriggerExpl = new Oui.Widgets.Label("The trigger is what makes an action happen");
         window.addChild(labelTriggerExpl);
 
         let triggerBox = new Oui.GroupBox("Trigger");
@@ -32,7 +32,7 @@ class EditElementWindow {
 
         triggerBox.addChild(this.element.trigger.createWidget());
 
-        let labelActionExpl = new Oui.Widgets.Label("The action happens when the trigger is triggered");
+        let labelActionExpl = new Oui.Widgets.Label("The action occurs when the trigger is activated");
         window.addChild(labelActionExpl);
 
         let actionBox = new Oui.GroupBox("Action");

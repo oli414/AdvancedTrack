@@ -50,15 +50,76 @@ class AdvancedTrackManager {
     }
 
     tick() {
-        let carEntities = map.getAllEntities("car");
+        // Find the advanced track elements and group them by ride ID.
+        // Additionally create a list of all the relevant ride IDs.
+        let relevantRideIds = [];
+        let relevantElements = [];
         for (let i = 0; i < this.elements.length; i++) {
             let element = this.elements[i];
-            if (!element.isValid())
+            let indexOf = relevantRideIds.indexOf(element.trigger.rideId);
+            if (indexOf < 0) {
+                relevantRideIds.push(element.trigger.rideId);
+                relevantElements.push([element]);
+            }
+            else {
+                relevantElements[indexOf].push(element);
+            }
+        }
+        
+        // Iterate over the rides that are used by advanced track elements.
+        for (let i = 0; i < relevantRideIds.length; i++) {
+            let ride = map.getRide(relevantRideIds[i]);
+            let elements = relevantElements[i];
+            
+            // Double check that the ride is not a flat ride.
+            if (ride.object.carsPerFlatRide != 255)
                 continue;
-
-            for (let j = 0; j < carEntities.length; j++) {
-                let car = carEntities[j];
-                element.trigger.test(car);
+            
+            let vehicles = ride.vehicles;
+            let trainIndex = 0;
+            
+            let entityId = vehicles[0];
+            let firstCarOfTrain = null;
+            
+            let isFirstCarOfTrain = true;
+            
+            // Iterate over all the ride car.
+            while (trainIndex < vehicles.length) {
+                let vehicle = map.getEntity(entityId);
+                
+                if (vehicle == null)
+                    break;
+                
+                let isLastCarOfTrain = vehicle.nextCarOnTrain == null;
+                
+                // Only test collisions on the first and last car of each train.
+                if (isLastCarOfTrain || isFirstCarOfTrain) {
+                    if (isFirstCarOfTrain)
+                        firstCarOfTrain = vehicle;
+                    
+                    let velocity = firstCarOfTrain.velocity;
+                    
+                    // Test the collision for al the advanced track elements that are acting on this ride.
+                    for (let k = 0; k < elements.length; k++) {
+                        elements[k].test({
+                            car: vehicle, 
+                            velocity: velocity,
+                            isFirstCarOfTrain: isFirstCarOfTrain,
+                            isLastCarOfTrain: isLastCarOfTrain,
+                            trainId: firstCarOfTrain.id
+                        });
+                    }
+                }
+                
+                // Setup for the next iteration.
+                entityId = vehicle.nextCarOnTrain;
+                isFirstCarOfTrain = false;
+                if (isLastCarOfTrain) {
+                    // If this is the last car of the train, we can assume that the next ride car will be the first car of a train.
+                    trainIndex++;
+                    entityId = vehicles[trainIndex];
+                    isFirstCarOfTrain = true;
+                }
             }
         }
     }

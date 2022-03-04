@@ -6,7 +6,6 @@ import ParkData from "./ParkData";
 /// <reference path="../../../bin/openrct2.d.ts" />
 
 function main() {
-
     function closeWindow(classification) {
         let window = ui.getWindow(classification);
         if (window) {
@@ -23,7 +22,6 @@ function main() {
         advancedTrackWindow.open();
     })
 
-
     context.subscribe("interval.tick", () => {
         advancedTrackManager.tick();
     });
@@ -36,8 +34,9 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '0.1',
+    version: '0.2',
     licence: "MIT",
+    targetApiVersion: 46,
     authors: ['Oli414'],
     type: 'local',
     main: main

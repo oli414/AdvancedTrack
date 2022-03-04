@@ -110,7 +110,7 @@ var Trigger = function () {
         }
     }, {
         key: "test",
-        value: function test(car) {
+        value: function test(carDetails) {
             return false;
         }
     }, {
@@ -3056,6 +3056,37 @@ var MapHelper = function () {
             }
         }
     }, {
+        key: "SetChainLift",
+        value: function SetChainLift(tile, hasChain) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track") {
+                    element.hasChainLift = hasChain;
+                }
+            }
+        }
+    }, {
+        key: "SetBrakeBoosterSpeed",
+        value: function SetBrakeBoosterSpeed(tile, speed) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track" && element.brakeBoosterSpeed != null) {
+                    element.brakeBoosterSpeed = speed;
+                }
+            }
+        }
+    }, {
+        key: "GetBrakeBoosterSpeed",
+        value: function GetBrakeBoosterSpeed(tile) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track" && element.brakeBoosterSpeed != null) {
+                    return element.brakeBoosterSpeed;
+                }
+            }
+            return 1;
+        }
+    }, {
         key: "SwitchTrackElements",
         value: function SwitchTrackElements(tile) {
             var trackElements = [];
@@ -3121,7 +3152,7 @@ var VehicleSensor = function (_Trigger) {
 
         _this24.method = 0;
 
-        _this24._sensedEntityId = -1;
+        _this24._sensedEntityIds = [];
         return _this24;
     }
 
@@ -3144,44 +3175,48 @@ var VehicleSensor = function (_Trigger) {
             return true;
         }
     }, {
-        key: "test",
-        value: function test(car) {
-            if (car.ride != this.rideId) return false;
-
-            if (this.method == 1 && car.nextCarOnTrain != null) // Last car on the train
-                return false;
-
-            if (this.method == 0) {
-                if (car.previousCarOnRide != car.id) {
-                    // Only car on the train
-                    // Check if this is the front car
-                    var previousCar = map.getEntity(car.previousCarOnRide);
-                    if (previousCar.nextCarOnTrain != null) {
-                        return false;
-                    }
-                }
+        key: "addSensedEntity",
+        value: function addSensedEntity(id) {
+            this._sensedEntityIds.push(id);
+        }
+    }, {
+        key: "hasSensedEntity",
+        value: function hasSensedEntity(id) {
+            return this._sensedEntityIds.indexOf(id) >= 0;
+        }
+    }, {
+        key: "removeSensedEntity",
+        value: function removeSensedEntity(id) {
+            var index = this._sensedEntityIds.indexOf(id);
+            if (index > -1) {
+                this._sensedEntityIds.splice(index, 1);
             }
+        }
+    }, {
+        key: "test",
+        value: function test(carDetails) {
+            var trainGoingForwards = carDetails.velocity > 0;
+            var carIsOnTile = Math.floor(carDetails.car.x / 32) == this.x && Math.floor(carDetails.car.y / 32) == this.y;
 
-            if (this._sensedEntityId >= 0) {
-                if (Math.floor(car.x / 32) != this.x || Math.floor(car.y / 32) != this.y) {
-                    if (this._sensedEntityId == car.id) {
-                        this._sensedEntityId = -1;
+            if (carIsOnTile && !this.hasSensedEntity(carDetails.car.id)) {
+                // Train entered tile
+                this.addSensedEntity(carDetails.car.id);
 
-                        if (this.method == 1) {
-                            this.element.action.perform();
-                            return true;
-                        }
-                        return false;
-                    }
+                // Trigger on train entered, depending on the direction of travel check if the
+                // first or last car entered the tile.
+                if (this.method == 0 && (trainGoingForwards && carDetails.isFirstCarOfTrain || !trainGoingForwards && carDetails.isLastCarOfTrain)) {
+                    this.element.action.perform();
+                    return true;
                 }
-            } else {
-                if (Math.floor(car.x / 32) == this.x && Math.floor(car.y / 32) == this.y) {
-                    this._sensedEntityId = car.id;
+            } else if (!carIsOnTile && this.hasSensedEntity(carDetails.car.id)) {
+                // Train exited tile
+                this.removeSensedEntity(carDetails.car.id);
 
-                    if (this.method == 0) {
-                        this.element.action.perform();
-                        return true;
-                    }
+                // Trigger on train entered, depending on the direction of travel check if the
+                // first or last car exited the tile.
+                if (this.method == 1 && (trainGoingForwards && carDetails.isLastCarOfTrain || !trainGoingForwards && carDetails.isFirstCarOfTrain)) {
+                    this.element.action.perform();
+                    return true;
                 }
             }
             return false;
@@ -3473,6 +3508,316 @@ var SetBlockBrake = function (_Action2) {
     return SetBlockBrake;
 }(Action);
 
+var SetLiftSpeed = function (_Action3) {
+    _inherits(SetLiftSpeed, _Action3);
+
+    function SetLiftSpeed(element) {
+        _classCallCheck(this, SetLiftSpeed);
+
+        var _this30 = _possibleConstructorReturn(this, (SetLiftSpeed.__proto__ || Object.getPrototypeOf(SetLiftSpeed)).call(this, element));
+
+        _this30.rideId = -1;
+        _this30.chainSpeed = 1;
+        return _this30;
+    }
+
+    _createClass(SetLiftSpeed, [{
+        key: "isValid",
+        value: function isValid() {
+            if (this.rideId == -1) {
+                this.validationMessage = "No ride selected";
+                return false;
+            }
+
+            if (map.getRide(this.rideId) == null) {
+                this.validationMessage = "Invalid ride selected";
+                return false;
+            }
+            this.validationMessage = "Set lift speed is ready to go";
+            return true;
+        }
+    }, {
+        key: "perform",
+        value: function perform() {
+            if (map.getRide(this.rideId) != null) {
+                var gameActionData = {
+                    "setting": 8, // RideSetSetting::LiftHillSpeed
+                    "ride": this.rideId,
+                    "value": this.chainSpeed
+                };
+
+                context.queryAction("ridesetsetting", gameActionData, function (result) {
+                    if (result.error != 0) {
+                        console.log("Can't set chain lift speed: " + result.errorMessage);
+                        return;
+                    }
+
+                    context.executeAction("ridesetsetting", gameActionData);
+                });
+            }
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                rideId: this.rideId,
+                chainSpeed: this.chainSpeed
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.rideId = data.rideId;
+            this.chainSpeed = data.chainSpeed;
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {
+            var _this31 = this;
+
+            var box = new Oui.VerticalBox();
+            box.setPadding(0, 0, 0, 0);
+
+            {
+                var info = new Oui.Widgets.Label("Sets the chain lift speed");
+                box.addChild(info);
+            }
+            {
+                var _info4 = new Oui.Widgets.Label("when triggered.");
+                box.addChild(_info4);
+            }
+
+            this.isValid();
+            var statusLabel = new Oui.Widgets.Label(this.validationMessage);
+
+            var rideNames = [];
+            var rideIndices = [];
+
+            var rides = map.rides;
+            var selectedRide = 0;
+            for (var i = 0; i < rides.length; i++) {
+                if (rides[i].classification == "ride") {
+                    rideNames.push(rides[i].name);
+                    rideIndices.push(rides[i].id);
+
+                    if (rides[i].id == this.rideId) {
+                        selectedRide = rideIndices.length - 1;
+                    }
+                }
+            }
+
+            var rideSelection = new Oui.Widgets.Dropdown(rideNames, function (value) {
+                _this31.rideId = rideIndices[value];
+            });
+            rideSelection.setSelectedItem(selectedRide);
+            box.addChild(rideSelection);
+
+            var chainSpeedspinner = new Oui.Widgets.Spinner(this.chainSpeed, 1, function (value) {
+                _this31.chainSpeed = value;
+            });
+            box.addChild(chainSpeedspinner);
+            {
+                var _info5 = new Oui.Widgets.Label("The speed does not translate to a known unit (kmh/mph).");
+                box.addChild(_info5);
+            }
+
+            box.addChild(statusLabel);
+
+            return box;
+        }
+    }]);
+
+    return SetLiftSpeed;
+}(Action);
+
+var SetChainLift = function (_Action4) {
+    _inherits(SetChainLift, _Action4);
+
+    function SetChainLift(element) {
+        _classCallCheck(this, SetChainLift);
+
+        var _this32 = _possibleConstructorReturn(this, (SetChainLift.__proto__ || Object.getPrototypeOf(SetChainLift)).call(this, element));
+
+        _this32.x = -1;
+        _this32.y = -1;
+        _this32.chainLift = true;
+        return _this32;
+    }
+
+    _createClass(SetChainLift, [{
+        key: "isValid",
+        value: function isValid() {
+            if (this.x == -1 || this.y == -1) {
+                this.validationMessage = "Chain lift location has not been set";
+                return false;
+            }
+            if (!MapHelper.GetTrackElement(map.getTile(this.x, this.y))) {
+                this.validationMessage = "There is no track at the set location";
+                return false;
+            }
+            this.validationMessage = "Chain lift is ready to go";
+            return true;
+        }
+    }, {
+        key: "perform",
+        value: function perform() {
+            console.log("setting chainlift");
+            MapHelper.SetChainLift(map.getTile(this.x, this.y), this.chainLift);
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                x: this.x,
+                y: this.y,
+                chainLift: this.chainLift
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.x = data.x;
+            this.y = data.y;
+            this.chainLift = data.chainLift;
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {
+            var _this33 = this;
+
+            var that = this;
+            var box = new Oui.VerticalBox();
+            box.setPadding(0, 0, 0, 0);
+
+            {
+                var info = new Oui.Widgets.Label("Sets a track section's chain lift property");
+                box.addChild(info);
+            }
+            {
+                var _info6 = new Oui.Widgets.Label("when triggered.");
+                box.addChild(_info6);
+            }
+
+            this.isValid();
+            var statusLabel = new Oui.Widgets.Label(this.validationMessage);
+
+            var switchLoc = new LocationPromptWidget("Track Section:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+                _this33.x = x;
+                _this33.y = y;
+                _this33.isValid();
+                statusLabel.setText(_this33.validationMessage);
+            });
+            box.addChild(switchLoc.element);
+
+            var checkBox = new Oui.Widgets.Dropdown(["Enable chain lift", "Disable chain lift"], function (val) {
+                that.chainLift = val == 0;
+            });
+            checkBox.setSelectedItem(1 - this.chainLift);
+            box.addChild(checkBox);
+
+            box.addChild(statusLabel);
+
+            return box;
+        }
+    }]);
+
+    return SetChainLift;
+}(Action);
+
+var SetBrakeBoosterSpeed = function (_Action5) {
+    _inherits(SetBrakeBoosterSpeed, _Action5);
+
+    function SetBrakeBoosterSpeed(element) {
+        _classCallCheck(this, SetBrakeBoosterSpeed);
+
+        var _this34 = _possibleConstructorReturn(this, (SetBrakeBoosterSpeed.__proto__ || Object.getPrototypeOf(SetBrakeBoosterSpeed)).call(this, element));
+
+        _this34.x = -1;
+        _this34.y = -1;
+        _this34.speed = 1;
+        return _this34;
+    }
+
+    _createClass(SetBrakeBoosterSpeed, [{
+        key: "isValid",
+        value: function isValid() {
+            if (this.x == -1 || this.y == -1) {
+                this.validationMessage = "Brake/booster location has not been set";
+                return false;
+            }
+            if (!MapHelper.GetTrackElement(map.getTile(this.x, this.y))) {
+                this.validationMessage = "There is no track at the set location";
+                return false;
+            }
+            this.validationMessage = "Brake/booster is ready to go";
+            return true;
+        }
+    }, {
+        key: "perform",
+        value: function perform() {
+            MapHelper.SetBrakeBoosterSpeed(map.getTile(this.x, this.y), this.speed);
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            return {
+                x: this.x,
+                y: this.y,
+                speed: this.speed
+            };
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.x = data.x;
+            this.y = data.y;
+            this.speed = data.speed;
+        }
+    }, {
+        key: "createWidget",
+        value: function createWidget() {
+            var _this35 = this;
+
+            var box = new Oui.VerticalBox();
+            box.setPadding(0, 0, 0, 0);
+
+            {
+                var info = new Oui.Widgets.Label("Sets the brake/booster speed when triggered.");
+                box.addChild(info);
+            }
+
+            this.isValid();
+            var statusLabel = new Oui.Widgets.Label(this.validationMessage);
+            var speedSpinner = null;
+            var switchLoc = new LocationPromptWidget("Brake/Booster:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+                _this35.x = x;
+                _this35.y = y;
+                if (_this35.isValid()) {
+                    _this35.speed = MapHelper.GetBrakeBoosterSpeed(map.getTile(_this35.x, _this35.y));
+                    speedSpinner.setValue(_this35.speed);
+                }
+                statusLabel.setText(_this35.validationMessage);
+            });
+            box.addChild(switchLoc.element);
+
+            speedSpinner = new Oui.Widgets.Spinner(this.speed, 1, function (value) {
+                _this35.speed = value;
+            });
+            box.addChild(speedSpinner);
+            {
+                var _info7 = new Oui.Widgets.Label("The speed does not translate to a known unit (kmh/mph).");
+                box.addChild(_info7);
+            }
+
+            box.addChild(statusLabel);
+
+            return box;
+        }
+    }]);
+
+    return SetBrakeBoosterSpeed;
+}(Action);
+
 var Element$1 = function () {
     function Element$1(manager, triggerType, actionType) {
         _classCallCheck(this, Element$1);
@@ -3505,8 +3850,8 @@ var Element$1 = function () {
         }
     }, {
         key: "test",
-        value: function test(car) {
-            this.trigger.test(car);
+        value: function test(carDetails) {
+            this.trigger.test(carDetails);
         }
     }, {
         key: "serialize",
@@ -3534,9 +3879,9 @@ Element$1.TriggerTypes = [VehicleSensor];
 
 Element$1.TriggerTypeNames = ["Vehicle Sensor"];
 
-Element$1.ActionTypes = [SwitchTrack, SetBlockBrake];
+Element$1.ActionTypes = [SwitchTrack, SetBlockBrake, SetChainLift, SetLiftSpeed, SetBrakeBoosterSpeed];
 
-Element$1.ActionTypeNames = ["Switch Track", "Set Block Brake"];
+Element$1.ActionTypeNames = ["Switch Track", "Set Block Brake", "Set Chain Lift", "Set Chain Lift Speed", "Set Brake/Booster Speed"];
 
 var AdvancedTrackManager = function () {
     function AdvancedTrackManager(parkData) {
@@ -3596,14 +3941,72 @@ var AdvancedTrackManager = function () {
     }, {
         key: "tick",
         value: function tick() {
-            var carEntities = map.getAllEntities("car");
+            // Find the advanced track elements and group them by ride ID.
+            // Additionally create a list of all the relevant ride IDs.
+            var relevantRideIds = [];
+            var relevantElements = [];
             for (var i = 0; i < this.elements.length; i++) {
                 var element = this.elements[i];
-                if (!element.isValid()) continue;
+                var indexOf = relevantRideIds.indexOf(element.trigger.rideId);
+                if (indexOf < 0) {
+                    relevantRideIds.push(element.trigger.rideId);
+                    relevantElements.push([element]);
+                } else {
+                    relevantElements[indexOf].push(element);
+                }
+            }
 
-                for (var j = 0; j < carEntities.length; j++) {
-                    var car = carEntities[j];
-                    element.trigger.test(car);
+            // Iterate over the rides that are used by advanced track elements.
+            for (var _i6 = 0; _i6 < relevantRideIds.length; _i6++) {
+                var ride = map.getRide(relevantRideIds[_i6]);
+                var elements = relevantElements[_i6];
+
+                // Double check that the ride is not a flat ride.
+                if (ride.object.carsPerFlatRide != 255) continue;
+
+                var vehicles = ride.vehicles;
+                var trainIndex = 0;
+
+                var entityId = vehicles[0];
+                var firstCarOfTrain = null;
+
+                var isFirstCarOfTrain = true;
+
+                // Iterate over all the ride car.
+                while (trainIndex < vehicles.length) {
+                    var vehicle = map.getEntity(entityId);
+
+                    if (vehicle == null) break;
+
+                    var isLastCarOfTrain = vehicle.nextCarOnTrain == null;
+
+                    // Only test collisions on the first and last car of each train.
+                    if (isLastCarOfTrain || isFirstCarOfTrain) {
+                        if (isFirstCarOfTrain) firstCarOfTrain = vehicle;
+
+                        var velocity = firstCarOfTrain.velocity;
+
+                        // Test the collision for al the advanced track elements that are acting on this ride.
+                        for (var k = 0; k < elements.length; k++) {
+                            elements[k].test({
+                                car: vehicle,
+                                velocity: velocity,
+                                isFirstCarOfTrain: isFirstCarOfTrain,
+                                isLastCarOfTrain: isLastCarOfTrain,
+                                trainId: firstCarOfTrain.id
+                            });
+                        }
+                    }
+
+                    // Setup for the next iteration.
+                    entityId = vehicle.nextCarOnTrain;
+                    isFirstCarOfTrain = false;
+                    if (isLastCarOfTrain) {
+                        // If this is the last car of the train, we can assume that the next ride car will be the first car of a train.
+                        trainIndex++;
+                        entityId = vehicles[trainIndex];
+                        isFirstCarOfTrain = true;
+                    }
                 }
             }
         }
@@ -3638,7 +4041,7 @@ var EditElementWindow = function () {
                 that.locationPrompt.cancel();
             });
 
-            var labelTriggerExpl = new Oui.Widgets.Label("The trigger is the cause for of an action");
+            var labelTriggerExpl = new Oui.Widgets.Label("The trigger is what makes an action happen");
             window.addChild(labelTriggerExpl);
 
             var triggerBox = new Oui.GroupBox("Trigger");
@@ -3647,7 +4050,7 @@ var EditElementWindow = function () {
 
             triggerBox.addChild(this.element.trigger.createWidget());
 
-            var labelActionExpl = new Oui.Widgets.Label("The action happens when the trigger is triggered");
+            var labelActionExpl = new Oui.Widgets.Label("The action occurs when the trigger is activated");
             window.addChild(labelActionExpl);
 
             var actionBox = new Oui.GroupBox("Action");
@@ -3726,8 +4129,8 @@ var AdvancedTrackWindow = function () {
             window._paddingTop = 16 + 6;
             window._paddingLeft = 6;
             window._paddingRight = 6;
-            window.setWidth(400);
-            window.setHorizontalResize(true, 344, 600);
+            window.setWidth(500);
+            window.setHorizontalResize(true, 500, 800);
             window.setHeight(250);
             window.setVerticalResize(true, 200, 600);
             window.setOnClose(function () {
@@ -3735,15 +4138,15 @@ var AdvancedTrackWindow = function () {
             });
 
             {
-                var label = new Oui.Widgets.Label("Advanced Track save data is linked to the park name, NOT to the save file");
+                var label = new Oui.Widgets.Label("Advanced Track allows you to affect a ride's course based on a set");
                 window.addChild(label);
             }
             {
-                var _label = new Oui.Widgets.Label("Changes are saved automatically upon making changes. Use with care.");
+                var _label = new Oui.Widgets.Label("condition, like a train going over a specific tile. This can be used to create");
                 window.addChild(_label);
             }
             {
-                var _label2 = new Oui.Widgets.Label("Advanced Track save data does NOT transfer from user to user.");
+                var _label2 = new Oui.Widgets.Label("things like transfer tracks. Or creative block brake usage.");
                 _label2._marginBottom = 8;
                 window.addChild(_label2);
             }
@@ -3844,7 +4247,7 @@ var AdvancedTrackWindow = function () {
             var elementReactionTypes = new Oui.Widgets.Dropdown(Element$1.ActionTypeNames, function (index) {
                 that.selectedReactionType = index;
             });
-            elementReactionTypes.setWidth(100);
+            elementReactionTypes.setWidth(200);
             elementReactionTypes._marginRight = 4;
             elementReactionTypes.setHeight(13);
             bottom.addChild(elementReactionTypes);
@@ -3889,6 +4292,9 @@ var AdvancedTrackWindow = function () {
     return AdvancedTrackWindow;
 }();
 
+// Expose the OpenRCT2 to Visual Studio Code's Intellisense
+/// <reference path="../../../bin/openrct2.d.ts" />
+
 var ParkData = function () {
     function ParkData() {
         _classCallCheck(this, ParkData);
@@ -3896,10 +4302,7 @@ var ParkData = function () {
         this.namespace = "";
         this.parkName = "";
 
-        this.identifier = 0;
         this.loaded = false;
-
-        this.overwrite = false;
     }
 
     _createClass(ParkData, [{
@@ -3911,143 +4314,38 @@ var ParkData = function () {
     }, {
         key: "save",
         value: function save(parkData) {
-            this.parkName = park.name;
-            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
-            if (allParksData == null) {
-                allParksData = [];
-            }
-            if (this.identifier < allParksData.length) {
-                if (this.loaded && this.checkExistingName() && !this.overwrite) {
-                    this.showDupeWarning(parkData);
-                } else {
-                    allParksData[this.identifier] = {
-                        parkName: this.parkName,
-                        data: parkData
-                    };
+            var parkStorage = context.getParkStorage(this.namespace);
+            parkStorage.set("ParkData", parkData);
 
-                    if (parkData.elements.length == 0) {
-                        allParksData.splice(this.identifier, 1);
-                        this.identifier = allParksData.length;
-                    }
-                }
-            } else {
-                if (this.checkExistingName() && !this.overwrite) {
-                    this.showDupeWarning(parkData);
-                } else {
-                    if (parkData.elements.length > 0) {
-                        allParksData.push({
-                            parkName: this.parkName,
-                            data: parkData
-                        });
-                    }
-                }
-            }
             this.loaded = true;
-            context.sharedStorage.set(this.namespace + ".ParkData", allParksData);
-
-            this.overwrite = false;
-        }
-    }, {
-        key: "showDupeWarning",
-        value: function showDupeWarning(data) {
-            var that = this;
-            var window = new Oui.Window("advanced-track-dupe", "Advanced Track Warning");
-            window.setColors(28);
-            window.setWidth(300);
-
-            {
-                var line = new Oui.Widgets.Label("Advanced track data has not been saved.");
-                line._marginBottom = 8;
-                window.addChild(line);
-            }
-            {
-                var _line = new Oui.Widgets.Label("This plugin uses the park name to link save data");
-                window.addChild(_line);
-            }
-            {
-                var _line2 = new Oui.Widgets.Label("but a park with this name already exists.");
-                window.addChild(_line2);
-            }
-            {
-                var _line3 = new Oui.Widgets.Label("Please change the park name to something unique");
-                window.addChild(_line3);
-            }
-            {
-                var _line4 = new Oui.Widgets.Label("or proceed to overwrite the existing data.");
-                window.addChild(_line4);
-            }
-
-            var bottom = new Oui.HorizontalBox();
-            bottom.setPadding(0, 0, 0, 0);
-            window.addChild(bottom);
-
-            var overwriteButton = new Oui.Widgets.Button("Overwrite", function () {
-                that.overwriteData(data);
-            });
-            overwriteButton.setWidth(80);
-            bottom.addChild(overwriteButton);
-
-            var bottomLabel = new Oui.Widgets.Label("");
-            bottom.addChild(bottomLabel);
-            bottom.setRemainingWidthFiller(bottomLabel);
-
-            var cancelButton = new Oui.Widgets.Button("Cancel", function () {
-                window._handle.close();
-            });
-            cancelButton.setWidth(80);
-            bottom.addChild(cancelButton);
-
-            window._x = ui.width / 2 - window.getPixelWidth() / 2;
-            window._y = ui.height / 2 - window.getPixelHeight() / 2;
-            window._openAtPosition = true;
-            window.open();
-        }
-    }, {
-        key: "overwriteData",
-        value: function overwriteData(data) {
-            this.overwrite = true;
-            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
-            if (allParksData == null) {
-                allParksData = [];
-            }
-            for (var i = 0; i < allParksData.length; i++) {
-                if (allParksData[i].parkName == this.parkName && this.identifier != i) {
-                    this.identifier = i;
-                    return;
-                }
-            }
-            this.save(data);
-        }
-    }, {
-        key: "checkExistingName",
-        value: function checkExistingName() {
-            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
-            if (allParksData == null) {
-                allParksData = [];
-            }
-            for (var i = 0; i < allParksData.length; i++) {
-                if (allParksData[i].parkName == this.parkName && this.identifier != i) {
-                    return true;
-                }
-            }
-            return false;
         }
     }, {
         key: "load",
         value: function load() {
-            var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
-            if (allParksData == null) {
-                allParksData = [];
-            }
-            for (var i = 0; i < allParksData.length; i++) {
-                if (allParksData[i].parkName == this.parkName) {
-                    this.identifier = i;
-                    this.loaded = true;
-                    return allParksData[i].data;
+            var parkStorage = context.getParkStorage(this.namespace);
+            var parkData = parkStorage.get("ParkData", null);
+
+            if (parkData == null) {
+                // Legacy support for parkname identified save data in the shared storage:
+                var allParksData = context.sharedStorage.get(this.namespace + ".ParkData");
+                if (allParksData == null) {
+                    allParksData = [];
                 }
+                for (var i = 0; i < allParksData.length; i++) {
+                    if (allParksData[i].parkName == this.parkName) {
+                        this.loaded = true;
+                        parkData = allParksData[i].data;
+                        this.save(parkData);
+
+                        console.log("Park data has been transferred from the shared storage to the park store.");
+                        return parkData;
+                    }
+                }
+                return null;
+            } else {
+                this.loaded = true;
+                return parkData;
             }
-            this.identifier = allParksData.length;
-            return null;
         }
     }]);
 
@@ -4058,7 +4356,6 @@ var ParkData = function () {
 /// <reference path="../../../bin/openrct2.d.ts" />
 
 function main() {
-
     function closeWindow(classification) {
         var window = ui.getWindow(classification);
         if (window) {
@@ -4087,8 +4384,9 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '0.1',
+    version: '0.2',
     licence: "MIT",
+    targetApiVersion: 46,
     authors: ['Oli414'],
     type: 'local',
     main: main

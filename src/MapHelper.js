@@ -130,6 +130,34 @@ class MapHelper {
         }
     }
 
+    static SetChainLift(tile, hasChain) {
+        for (let i = 0; i < tile.numElements; i++) {
+            let element = tile.getElement(i);
+            if (element.type == "track") {
+                element.hasChainLift = hasChain;
+            }
+        }
+    }
+
+    static SetBrakeBoosterSpeed(tile, speed) {
+        for (let i = 0; i < tile.numElements; i++) {
+            let element = tile.getElement(i);
+            if (element.type == "track" && element.brakeBoosterSpeed != null) {
+                element.brakeBoosterSpeed = speed;
+            }
+        }
+    }
+
+    static GetBrakeBoosterSpeed(tile) {
+        for (let i = 0; i < tile.numElements; i++) {
+            let element = tile.getElement(i);
+            if (element.type == "track" && element.brakeBoosterSpeed != null) {
+                return element.brakeBoosterSpeed;
+            }
+        }
+        return 1;
+    }
+
     static SwitchTrackElements(tile) {
         let trackElements = [];
         for (let i = 0; i < tile.numElements; i++) {
