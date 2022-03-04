@@ -1,5 +1,3 @@
-**Please Note:** Changes made with AdvancedTrack are saved automatically. The save data is tied to the park name and **not** the park save file. Make sure to use a unique park name to prevent conflicts. AdvancedTrack save data does **not** transfer from user to user. This will be improved when the new save file format is released.
-
 # Advanced Track
 Advanced Track is a plugin that allows users to setup more advanced logic based track features.
 Right now the plugin can primarily be used to create switch tracks.
@@ -12,9 +10,6 @@ This can in turn be used to create complex systems like a functional dual loadin
 Download the latest `AdvancedTrack.js` file from the releases page:
 https://github.com/oli414/AdvancedTrack/releases/
 And place it in `OpenRCT2/plugin`, you can now access the tools via the map toolbar.
-
-Check my tutorial if you're new to Plugins and/or Github:
-https://youtu.be/ZaM5pXDO03w?t=355
 
 # Tutorial
 
