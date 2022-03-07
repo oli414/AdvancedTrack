@@ -6,6 +6,8 @@ dual loading stations, switching tracks, drop tracks, lifts and much more!
 Advanced Track works by adding "track features" in the Advanced Track window, which can be found as an option under the map toolbar button.
 
 ### Control System
+![image](https://user-images.githubusercontent.com/2348094/157124831-15c65217-9911-42bb-a84a-4436e0b6a667.png)
+
 A flexible setup that allows you to select an action which is executed when a selected trigger is triggered.
 
 Most of the triggers and action are location based, meaning that they affect the track piece at the specified location.
@@ -22,6 +24,8 @@ Most of the triggers and action are location based, meaning that they affect the
 - Cycle the order that the track pieces are in (track switching).
 
 ### Lift/Drop Track
+![image](https://user-images.githubusercontent.com/2348094/157124687-2802a110-f272-4454-820c-3becdde93517.png)
+
 Stops a train at a given location, and either moves the track and train up or down to another level. The train is dispatched at the new height. This feature 
 essentially allows you to create lifts, or drop tracks which are elements that some real life rides feature.
 
