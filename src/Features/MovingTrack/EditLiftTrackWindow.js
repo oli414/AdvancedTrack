@@ -42,8 +42,8 @@ class EditLiftTrackWindow {
             if (that.feature.endZ == -1) {
                 that.feature.endZ = that.feature.startZ;
             }
-            that.startHeightSpinner.setValue(that.feature.startZ / 8); 
-            that.startHeightSpinner.setValue(that.feature.endZ / 8); 
+            that.startHeightSpinner.setValue(Math.floor(that.feature.startZ / 8)); 
+            that.startHeightSpinner.setValue(Math.floor(that.feature.endZ / 8)); 
             that.feature.startX = x;
             that.feature.startY = y;
             that.feature.isValid();
@@ -63,7 +63,7 @@ class EditLiftTrackWindow {
             label.setRelativeWidth(15);
             row.addChild(label);
             
-            this.startHeightSpinner = new Oui.Widgets.Spinner(this.feature.startZ / 8, 1, (value) => {
+            this.startHeightSpinner = new Oui.Widgets.Spinner(Math.floor(this.feature.startZ / 8), 1, (value) => {
                 that.feature.startZ = value * 8;
             });
             this.startHeightSpinner.setRelativeWidth(35);
@@ -73,7 +73,7 @@ class EditLiftTrackWindow {
             label.setRelativeWidth(15);
             row.addChild(label);
             
-            this.endHeightSpinner = new Oui.Widgets.Spinner(this.feature.endZ / 8, 1, (value) => {
+            this.endHeightSpinner = new Oui.Widgets.Spinner(Math.floor(this.feature.endZ / 8), 1, (value) => {
                 that.feature.endZ = value * 8;
             });
             this.endHeightSpinner.setRelativeWidth(35);

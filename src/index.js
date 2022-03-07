@@ -21,8 +21,11 @@ function closeAll() {
 }
 
 function main() {
+    if (network.mode != "none") {
+        return;
+    }
+    
     try {
-
         let parkData = new ParkData();
         parkData.init("Oli414.AdvancedTrack");
         let advancedTrackManager = new AdvancedTrackManager(parkData);
@@ -50,7 +53,7 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '0.2',
+    version: '1.3',
     licence: "MIT",
     targetApiVersion: 47,
     authors: ['Oli414'],

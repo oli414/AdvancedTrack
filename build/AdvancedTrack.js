@@ -4235,8 +4235,8 @@ var EditLiftTrackWindow = function () {
                 if (that.feature.endZ == -1) {
                     that.feature.endZ = that.feature.startZ;
                 }
-                that.startHeightSpinner.setValue(that.feature.startZ / 8);
-                that.startHeightSpinner.setValue(that.feature.endZ / 8);
+                that.startHeightSpinner.setValue(Math.floor(that.feature.startZ / 8));
+                that.startHeightSpinner.setValue(Math.floor(that.feature.endZ / 8));
                 that.feature.startX = x;
                 that.feature.startY = y;
                 that.feature.isValid();
@@ -4256,7 +4256,7 @@ var EditLiftTrackWindow = function () {
                 label.setRelativeWidth(15);
                 row.addChild(label);
 
-                this.startHeightSpinner = new Oui.Widgets.Spinner(this.feature.startZ / 8, 1, function (value) {
+                this.startHeightSpinner = new Oui.Widgets.Spinner(Math.floor(this.feature.startZ / 8), 1, function (value) {
                     that.feature.startZ = value * 8;
                 });
                 this.startHeightSpinner.setRelativeWidth(35);
@@ -4266,7 +4266,7 @@ var EditLiftTrackWindow = function () {
                 label.setRelativeWidth(15);
                 row.addChild(label);
 
-                this.endHeightSpinner = new Oui.Widgets.Spinner(this.feature.endZ / 8, 1, function (value) {
+                this.endHeightSpinner = new Oui.Widgets.Spinner(Math.floor(this.feature.endZ / 8), 1, function (value) {
                     that.feature.endZ = value * 8;
                 });
                 this.endHeightSpinner.setRelativeWidth(35);
@@ -5409,8 +5409,11 @@ function closeAll() {
 }
 
 function main() {
-    try {
+    if (network.mode != "none") {
+        return;
+    }
 
+    try {
         var parkData = new ParkData();
         parkData.init("Oli414.AdvancedTrack");
         var advancedTrackManager = new AdvancedTrackManager(parkData);
@@ -5437,7 +5440,7 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '0.2',
+    version: '1.3',
     licence: "MIT",
     targetApiVersion: 47,
     authors: ['Oli414'],

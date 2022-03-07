@@ -28,6 +28,11 @@ essentially allows you to create lifts, or drop tracks which are elements that s
 You specify the position where the front of the train is meant to stop. The affected track pieces are automatically calculated depending on the train length. 
 This feature is intended for straight (non-diagonal) sections of track.
 
+## Installation
+Download the latest `AdvancedTrack.js` file from the releases page:
+https://github.com/oli414/AdvancedTrack/releases/
+And place it in `OpenRCT2/plugin`, you can now access the tools via the map toolbar.
+
 ## Limitations
 You may be required to use an alternative operation mode in order to open your ride if it doesn't make a full circuit due to track switches/lifts. For block brakes to continue to fuction you can either use a control system to control the block brakes, or create an invisible track to connect dead ends together for 
 the game to find the block brakes.
@@ -38,10 +43,5 @@ bottom most track piece (of any ride) in the order that is shown in the tile ins
 Currently Advanced Track does not work in multiplayer.
 
 People that download your park featuring Advanced Track functionality will need to have Advanced Track installed as well in order to see everything operating 
-as intended. Advanced Track simply won't operate without it, which may cause in a ride to crash in the worst case scenario. Advise park viewers to install 
+as intended. Advanced Track simply won't operate without it, which may cause a ride to crash in the worst case scenario. Advise park viewers to install 
 Advanced Track, or include a copy of the plugin with the park download.
-
-## Installation
-Download the latest `AdvancedTrack.js` file from the releases page:
-https://github.com/oli414/AdvancedTrack/releases/
-And place it in `OpenRCT2/plugin`, you can now access the tools via the map toolbar.
