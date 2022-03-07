@@ -32,6 +32,7 @@ class LocationPrompt {
             id: this.id,
             cursor: this.cursor,
             onStart: (e) => {
+                ui.tileSelection.range = null;
                 ui.mainViewport.visibilityFlags |= (1 << 7);
             },
             onDown: (e) => {
@@ -45,14 +46,14 @@ class LocationPrompt {
             onUp: (e) => {
                 this.selectedCoords = e.mapCoords;
                 this.setSelectionRange(this.selectedCoords, this.selectedCoords);
-                if (this.onFinish)
-                    this.onFinish(Math.floor(this.selectedCoords.x / 32), Math.floor(this.selectedCoords.y / 32));
                 ui.tileSelection.range = null;
                 ui.tool.cancel();
             },
             onFinish: () => {
                 ui.tileSelection.range = null;
                 ui.mainViewport.visibilityFlags &= ~(1 << 7);
+                if (this.onFinish)
+                    this.onFinish(Math.floor(this.selectedCoords.x / 32), Math.floor(this.selectedCoords.y / 32));
             },
         });
     }

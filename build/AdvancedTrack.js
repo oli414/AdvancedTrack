@@ -1,8 +1,12 @@
 "use strict";
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
@@ -56,6 +60,7 @@ var LocationPrompt = function () {
                 id: this.id,
                 cursor: this.cursor,
                 onStart: function onStart(e) {
+                    ui.tileSelection.range = null;
                     ui.mainViewport.visibilityFlags |= 1 << 7;
                 },
                 onDown: function onDown(e) {
@@ -69,13 +74,13 @@ var LocationPrompt = function () {
                 onUp: function onUp(e) {
                     _this.selectedCoords = e.mapCoords;
                     _this.setSelectionRange(_this.selectedCoords, _this.selectedCoords);
-                    if (_this.onFinish) _this.onFinish(Math.floor(_this.selectedCoords.x / 32), Math.floor(_this.selectedCoords.y / 32));
                     ui.tileSelection.range = null;
                     ui.tool.cancel();
                 },
                 onFinish: function onFinish() {
                     ui.tileSelection.range = null;
                     ui.mainViewport.visibilityFlags &= ~(1 << 7);
+                    if (_this.onFinish) _this.onFinish(Math.floor(_this.selectedCoords.x / 32), Math.floor(_this.selectedCoords.y / 32));
                 }
             });
         }
@@ -104,6 +109,9 @@ var Trigger = function () {
     }
 
     _createClass(Trigger, [{
+        key: "getTiles",
+        value: function getTiles() {}
+    }, {
         key: "isValid",
         value: function isValid() {
             return true;
@@ -131,9 +139,9 @@ var Trigger = function () {
  */
 
 
-var Element = function () {
-    function Element() {
-        _classCallCheck(this, Element);
+var Element$1 = function () {
+    function Element$1() {
+        _classCallCheck(this, Element$1);
 
         this._parent = null;
 
@@ -162,7 +170,7 @@ var Element = function () {
      */
 
 
-    _createClass(Element, [{
+    _createClass(Element$1, [{
         key: "isDisabled",
         value: function isDisabled() {
             if (!this._isDisabled && this._parent != null) {
@@ -450,7 +458,7 @@ var Element = function () {
         }
     }]);
 
-    return Element;
+    return Element$1;
 }();
 
 /**
@@ -459,8 +467,8 @@ var Element = function () {
  */
 
 
-var Box = function (_Element) {
-    _inherits(Box, _Element);
+var Box = function (_Element$) {
+    _inherits(Box, _Element$);
 
     function Box() {
         _classCallCheck(this, Box);
@@ -657,7 +665,7 @@ var Box = function (_Element) {
     }]);
 
     return Box;
-}(Element);
+}(Element$1);
 
 /**
  * The vertical box is an element that holds children and positions them vertically in a top to bottom fasion.
@@ -1234,8 +1242,8 @@ function NumberGen() {
  * @extends Element
  */
 
-var Widget = function (_Element2) {
-    _inherits(Widget, _Element2);
+var Widget = function (_Element$2) {
+    _inherits(Widget, _Element$2);
 
     function Widget() {
         _classCallCheck(this, Widget);
@@ -1299,7 +1307,7 @@ var Widget = function (_Element2) {
     }]);
 
     return Widget;
-}(Element);
+}(Element$1);
 
 Widget.NumberGen = NumberGen;
 
@@ -1524,7 +1532,7 @@ var Button = function (_Widget) {
 
 var BaseClasses = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    Element: Element,
+    Element: Element$1,
     Box: Box,
     Widget: Widget,
     Button: Button
@@ -3146,7 +3154,6 @@ var VehicleSensor = function (_Trigger) {
 
         _this24.element = element;
 
-        _this24.rideId = -1;
         _this24.x = -1;
         _this24.y = -1;
 
@@ -3157,18 +3164,25 @@ var VehicleSensor = function (_Trigger) {
     }
 
     _createClass(VehicleSensor, [{
+        key: "getTiles",
+        value: function getTiles() {
+            if (this.x >= 0 && this.y >= 0) {
+                return [{
+                    x: this.x * 32,
+                    y: this.y * 32
+                }];
+            }
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             if (this.x == -1 || this.y == -1) {
                 this.validationMessage = "Sensor location has not been set";
                 return false;
             }
-            if (this.rideId == -1) {
-                this.validationMessage = "Sensor is not at a location with track";
-                return false;
-            }
-            if (map.getRide(this.rideId) == null) {
-                this.validationMessage = "Sensor is not at a location with track";
+            if (!MapHelper.GetTrackElement(map.getTile(this.x, this.y))) {
+                this.validationMessage = "There is no track at the set location";
                 return false;
             }
             this.validationMessage = "Vehicle sensor is ready to go";
@@ -3225,7 +3239,6 @@ var VehicleSensor = function (_Trigger) {
         key: "serialize",
         value: function serialize() {
             return {
-                rideId: this.rideId,
                 x: this.x,
                 y: this.y,
                 method: this.method
@@ -3234,7 +3247,6 @@ var VehicleSensor = function (_Trigger) {
     }, {
         key: "deserialize",
         value: function deserialize(data) {
-            this.rideId = data.rideId;
             this.x = data.x;
             this.y = data.y;
 
@@ -3264,17 +3276,12 @@ var VehicleSensor = function (_Trigger) {
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
-            var sensorLoc = new LocationPromptWidget("Vehicle Sensor:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
-                var track = MapHelper.GetTrackElement(map.getTile(x, y));
-                if (track) {
-                    _this25.rideId = track.ride;
-                } else {
-                    _this25.rideId = -1;
-                }
+            var sensorLoc = new LocationPromptWidget("Vehicle Sensor:", this.element.ride.manager.locationPrompt, this.x, this.y, function (x, y) {
                 _this25.x = x;
                 _this25.y = y;
                 _this25.isValid();
                 statusLabel.setText(_this25.validationMessage);
+                _this25.element.highlight(true);
             });
             box.addChild(sensorLoc.element);
 
@@ -3312,6 +3319,11 @@ var Action = function () {
     }
 
     _createClass(Action, [{
+        key: "getTiles",
+        value: function getTiles() {
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             return true;
@@ -3346,6 +3358,17 @@ var SwitchTrack = function (_Action) {
     }
 
     _createClass(SwitchTrack, [{
+        key: "getTiles",
+        value: function getTiles() {
+            if (this.x >= 0 && this.y >= 0) {
+                return [{
+                    x: this.x * 32,
+                    y: this.y * 32
+                }];
+            }
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             if (this.x == -1 || this.y == -1) {
@@ -3398,11 +3421,12 @@ var SwitchTrack = function (_Action) {
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
-            var switchLoc = new LocationPromptWidget("Switch Track:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+            var switchLoc = new LocationPromptWidget("Switch Track:", this.element.ride.manager.locationPrompt, this.x, this.y, function (x, y) {
                 _this27.x = x;
                 _this27.y = y;
                 _this27.isValid();
                 statusLabel.setText(_this27.validationMessage);
+                _this27.element.highlight(true);
             });
             box.addChild(switchLoc.element);
 
@@ -3430,6 +3454,17 @@ var SetBlockBrake = function (_Action2) {
     }
 
     _createClass(SetBlockBrake, [{
+        key: "getTiles",
+        value: function getTiles() {
+            if (this.x >= 0 && this.y >= 0) {
+                return [{
+                    x: this.x * 32,
+                    y: this.y * 32
+                }];
+            }
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             if (this.x == -1 || this.y == -1) {
@@ -3485,11 +3520,12 @@ var SetBlockBrake = function (_Action2) {
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
-            var switchLoc = new LocationPromptWidget("Block Brake:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+            var switchLoc = new LocationPromptWidget("Block Brake:", this.element.ride.manager.locationPrompt, this.x, this.y, function (x, y) {
                 _this29.x = x;
                 _this29.y = y;
                 _this29.isValid();
                 statusLabel.setText(_this29.validationMessage);
+                _this29.element.highlight(true);
             });
             box.addChild(switchLoc.element);
 
@@ -3522,6 +3558,11 @@ var SetLiftSpeed = function (_Action3) {
     }
 
     _createClass(SetLiftSpeed, [{
+        key: "getTiles",
+        value: function getTiles() {
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             if (this.rideId == -1) {
@@ -3645,6 +3686,17 @@ var SetChainLift = function (_Action4) {
     }
 
     _createClass(SetChainLift, [{
+        key: "getTiles",
+        value: function getTiles() {
+            if (this.x >= 0 && this.y >= 0) {
+                return [{
+                    x: this.x * 32,
+                    y: this.y * 32
+                }];
+            }
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             if (this.x == -1 || this.y == -1) {
@@ -3661,7 +3713,6 @@ var SetChainLift = function (_Action4) {
     }, {
         key: "perform",
         value: function perform() {
-            console.log("setting chainlift");
             MapHelper.SetChainLift(map.getTile(this.x, this.y), this.chainLift);
         }
     }, {
@@ -3701,11 +3752,12 @@ var SetChainLift = function (_Action4) {
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
-            var switchLoc = new LocationPromptWidget("Track Section:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+            var switchLoc = new LocationPromptWidget("Track Section:", this.element.ride.manager.locationPrompt, this.x, this.y, function (x, y) {
                 _this33.x = x;
                 _this33.y = y;
                 _this33.isValid();
                 statusLabel.setText(_this33.validationMessage);
+                _this33.element.highlight(true);
             });
             box.addChild(switchLoc.element);
 
@@ -3739,6 +3791,17 @@ var SetBrakeBoosterSpeed = function (_Action5) {
     }
 
     _createClass(SetBrakeBoosterSpeed, [{
+        key: "getTiles",
+        value: function getTiles() {
+            if (this.x >= 0 && this.y >= 0) {
+                return [{
+                    x: this.x * 32,
+                    y: this.y * 32
+                }];
+            }
+            return [];
+        }
+    }, {
         key: "isValid",
         value: function isValid() {
             if (this.x == -1 || this.y == -1) {
@@ -3789,7 +3852,7 @@ var SetBrakeBoosterSpeed = function (_Action5) {
             this.isValid();
             var statusLabel = new Oui.Widgets.Label(this.validationMessage);
             var speedSpinner = null;
-            var switchLoc = new LocationPromptWidget("Brake/Booster:", this.element.manager.locationPrompt, this.x, this.y, function (x, y) {
+            var switchLoc = new LocationPromptWidget("Brake/Booster:", this.element.ride.manager.locationPrompt, this.x, this.y, function (x, y) {
                 _this35.x = x;
                 _this35.y = y;
                 if (_this35.isValid()) {
@@ -3797,6 +3860,7 @@ var SetBrakeBoosterSpeed = function (_Action5) {
                     speedSpinner.setValue(_this35.speed);
                 }
                 statusLabel.setText(_this35.validationMessage);
+                _this35.element.highlight(true);
             });
             box.addChild(switchLoc.element);
 
@@ -3818,209 +3882,74 @@ var SetBrakeBoosterSpeed = function (_Action5) {
     return SetBrakeBoosterSpeed;
 }(Action);
 
-var Element$1 = function () {
-    function Element$1(manager, triggerType, actionType) {
-        _classCallCheck(this, Element$1);
+var Feature = function () {
+    function Feature(ride, type) {
+        _classCallCheck(this, Feature);
 
-        this.manager = manager;
+        this.ride = ride;
 
-        this._isValidCache = false;
+        this.type = type;
 
-        this.triggerType = triggerType;
-        this.trigger = new Element$1.TriggerTypes[triggerType](this);
-        this.actionType = actionType;
-        this.action = new Element$1.ActionTypes[actionType](this);
+        this._savedIndex = 0;
     }
 
-    _createClass(Element$1, [{
+    _createClass(Feature, [{
         key: "getTitle",
         value: function getTitle() {
-            if (this.triggerType == 0) {
-                if (map.getRide(this.trigger.rideId)) return map.getRide(this.trigger.rideId).name;
-                return "Missing Ride";
-            }
-            return "Advanced Track Element";
+            return Feature.TypeNames[this.type];
         }
     }, {
         key: "isValid",
         value: function isValid() {
-            var a = this.trigger.isValid() && this.action.isValid();
-            this._isValidCache = a;
-            return a;
+            return false;
         }
     }, {
-        key: "test",
-        value: function test(carDetails) {
-            this.trigger.test(carDetails);
-        }
+        key: "checkCollision",
+        value: function checkCollision(carDetails) {}
+    }, {
+        key: "tick",
+        value: function tick() {}
+    }, {
+        key: "highlight",
+        value: function highlight(enable) {}
     }, {
         key: "serialize",
         value: function serialize() {
             return {
-                triggerType: this.triggerType,
-                actionType: this.actionType,
-                trigger: this.trigger.serialize(),
-                action: this.action.serialize()
+                type: this.type
             };
         }
     }, {
         key: "deserialize",
         value: function deserialize(data) {
-            this.trigger.deserialize(data.trigger);
-            this.action.deserialize(data.action);
-            this.isValid();
+            this.type = data.type;
+        }
+    }, {
+        key: "getEditWindow",
+        value: function getEditWindow(parent, onFinished) {
+            return null;
+        }
+    }], [{
+        key: "getWizardWindow",
+        value: function getWizardWindow(ride, onComplete) {
+            return null;
         }
     }]);
 
-    return Element$1;
+    return Feature;
 }();
 
-Element$1.TriggerTypes = [VehicleSensor];
+Feature.Types = [];
 
-Element$1.TriggerTypeNames = ["Vehicle Sensor"];
-
-Element$1.ActionTypes = [SwitchTrack, SetBlockBrake, SetChainLift, SetLiftSpeed, SetBrakeBoosterSpeed];
-
-Element$1.ActionTypeNames = ["Switch Track", "Set Block Brake", "Set Chain Lift", "Set Chain Lift Speed", "Set Brake/Booster Speed"];
-
-var AdvancedTrackManager = function () {
-    function AdvancedTrackManager(parkData) {
-        _classCallCheck(this, AdvancedTrackManager);
-
-        this.parkData = parkData;
-        this.elements = [];
-
-        this.locationPrompt = new LocationPrompt("advanced-track-location-prompt");
-    }
-
-    _createClass(AdvancedTrackManager, [{
-        key: "addElement",
-        value: function addElement(element) {
-            this.elements.push(element);
-        }
-    }, {
-        key: "deleteElement",
-        value: function deleteElement(element) {
-            var index = this.elements.indexOf(element);
-            if (index >= 0) {
-                this.elements.splice(index, 1);
-            }
-
-            this.save();
-        }
-    }, {
-        key: "hasElement",
-        value: function hasElement(element) {
-            return this.elements.indexOf(element) >= 0;
-        }
-    }, {
-        key: "save",
-        value: function save() {
-            var data = {};
-
-            data.elements = [];
-            for (var i = 0; i < this.elements.length; i++) {
-                data.elements.push(this.elements[i].serialize());
-            }
-            this.parkData.save(data);
-        }
-    }, {
-        key: "load",
-        value: function load() {
-            var data = this.parkData.load();
-            if (data == null) {
-                return; // No data to load.
-            }
-
-            for (var i = 0; i < data.elements.length; i++) {
-                var newElement = new Element$1(this, data.elements[i].triggerType, data.elements[i].actionType);
-                newElement.deserialize(data.elements[i]);
-                this.elements.push(newElement);
-            }
-        }
-    }, {
-        key: "tick",
-        value: function tick() {
-            // Find the advanced track elements and group them by ride ID.
-            // Additionally create a list of all the relevant ride IDs.
-            var relevantRideIds = [];
-            var relevantElements = [];
-            for (var i = 0; i < this.elements.length; i++) {
-                var element = this.elements[i];
-                var indexOf = relevantRideIds.indexOf(element.trigger.rideId);
-                if (indexOf < 0) {
-                    relevantRideIds.push(element.trigger.rideId);
-                    relevantElements.push([element]);
-                } else {
-                    relevantElements[indexOf].push(element);
-                }
-            }
-
-            // Iterate over the rides that are used by advanced track elements.
-            for (var _i6 = 0; _i6 < relevantRideIds.length; _i6++) {
-                var ride = map.getRide(relevantRideIds[_i6]);
-                var elements = relevantElements[_i6];
-
-                // Double check that the ride is not a flat ride.
-                if (ride.object.carsPerFlatRide != 255) continue;
-
-                var vehicles = ride.vehicles;
-                var trainIndex = 0;
-
-                var entityId = vehicles[0];
-                var firstCarOfTrain = null;
-
-                var isFirstCarOfTrain = true;
-
-                // Iterate over all the ride car.
-                while (trainIndex < vehicles.length) {
-                    var vehicle = map.getEntity(entityId);
-
-                    if (vehicle == null) break;
-
-                    var isLastCarOfTrain = vehicle.nextCarOnTrain == null;
-
-                    // Only test collisions on the first and last car of each train.
-                    if (isLastCarOfTrain || isFirstCarOfTrain) {
-                        if (isFirstCarOfTrain) firstCarOfTrain = vehicle;
-
-                        var velocity = firstCarOfTrain.velocity;
-
-                        // Test the collision for al the advanced track elements that are acting on this ride.
-                        for (var k = 0; k < elements.length; k++) {
-                            elements[k].test({
-                                car: vehicle,
-                                velocity: velocity,
-                                isFirstCarOfTrain: isFirstCarOfTrain,
-                                isLastCarOfTrain: isLastCarOfTrain,
-                                trainId: firstCarOfTrain.id
-                            });
-                        }
-                    }
-
-                    // Setup for the next iteration.
-                    entityId = vehicle.nextCarOnTrain;
-                    isFirstCarOfTrain = false;
-                    if (isLastCarOfTrain) {
-                        // If this is the last car of the train, we can assume that the next ride car will be the first car of a train.
-                        trainIndex++;
-                        entityId = vehicles[trainIndex];
-                        isFirstCarOfTrain = true;
-                    }
-                }
-            }
-        }
-    }]);
-
-    return AdvancedTrackManager;
-}();
+Feature.TypeNames = [];
 
 var EditElementWindow = function () {
-    function EditElementWindow(parent, element) {
+    function EditElementWindow(parent, element, onFinished) {
         _classCallCheck(this, EditElementWindow);
 
         this.parent = parent;
         this.element = element;
+        this.onFinished = onFinished;
         this.locationPrompt = new LocationPrompt("loc-prompt");
         this.window = this.createWindow();
     }
@@ -4030,7 +3959,7 @@ var EditElementWindow = function () {
         value: function createWindow() {
             var that = this;
 
-            var window = new Oui.Window("advanced-track-edit", "Advanced Track - Edit Element");
+            var window = new Oui.Window("advanced-track-edit-element", "Advanced Track - Edit Control System");
             window._paddingBottom = 6;
             window._paddingLeft = 6;
             window._paddingRight = 6;
@@ -4038,6 +3967,7 @@ var EditElementWindow = function () {
             window.setWidth(300);
 
             window.setOnClose(function () {
+                that.element.highlight(false);
                 that.locationPrompt.cancel();
             });
 
@@ -4068,14 +3998,8 @@ var EditElementWindow = function () {
             bottom.setRemainingWidthFiller(bottomFiller);
 
             var okButton = new Oui.Widgets.Button("Ok", function () {
-                if (!that.parent.advancedTrackManager.hasElement(that.element)) {
-                    that.parent.advancedTrackManager.addElement(that.element);
-                }
-                that.parent.advancedTrackManager.save();
                 that.window._handle.close();
-                that.parent.advancedTrackManager.locationPrompt.cancel();
-                that.parent.window._openAtPosition = true;
-                that.parent.open();
+                that.onFinished();
             });
             okButton.setWidth(50);
             bottom.addChild(okButton);
@@ -4087,6 +4011,986 @@ var EditElementWindow = function () {
     return EditElementWindow;
 }();
 
+var ElementWizardWindow = function () {
+    function ElementWizardWindow(ride, onComplete, elementType) {
+        _classCallCheck(this, ElementWizardWindow);
+
+        this.ride = ride;
+
+        this.selectedTriggerType = 0;
+        this.selectedReactionType = 0;
+
+        this.elementType = elementType;
+
+        this.onComplete = onComplete;
+
+        this.window = this.createWindow();
+    }
+
+    _createClass(ElementWizardWindow, [{
+        key: "createWindow",
+        value: function createWindow() {
+            var that = this;
+
+            var window = new Oui.Window("advanced-track-wizard-element", "Advanced Track - Control System Wizard");
+            window._paddingBottom = 6;
+            window._paddingLeft = 6;
+            window._paddingRight = 6;
+            window.setColors(26, 24);
+            window.setWidth(300);
+
+            var horizontalBox = new Oui.HorizontalBox();
+            horizontalBox.setPadding(0, 0, 0, 0);
+            window.addChild(horizontalBox);
+
+            {
+                var label = new Oui.Widgets.Label("Trigger:");
+                label.setRelativeWidth(30);
+                horizontalBox.addChild(label);
+            }
+
+            var elementTypes = new Oui.Widgets.Dropdown(this.elementType.TriggerTypeNames, function (index) {
+                that.selectedTriggerType = index;
+            });
+            elementTypes.setRelativeWidth(70);
+            elementTypes._marginRight = 4;
+            elementTypes.setHeight(13);
+            horizontalBox.addChild(elementTypes);
+
+            horizontalBox = new Oui.HorizontalBox();
+            horizontalBox.setPadding(0, 0, 0, 0);
+            window.addChild(horizontalBox);
+
+            {
+                var _label = new Oui.Widgets.Label("Action:");
+                _label.setRelativeWidth(30);
+                horizontalBox.addChild(_label);
+            }
+
+            var elementReactionTypes = new Oui.Widgets.Dropdown(this.elementType.ActionTypeNames, function (index) {
+                that.selectedReactionType = index;
+            });
+            elementReactionTypes.setRelativeWidth(70);
+            elementReactionTypes._marginRight = 4;
+            elementReactionTypes.setHeight(13);
+            horizontalBox.addChild(elementReactionTypes);
+
+            var createButton = new Oui.Widgets.Button("Create", function () {
+                that.ride.manager.save();
+                that.window._handle.close();
+
+                that.onComplete(new that.elementType(that.ride, that.selectedTriggerType, that.selectedReactionType));
+            });
+            window.addChild(createButton);
+
+            return window;
+        }
+    }]);
+
+    return ElementWizardWindow;
+}();
+
+var Element = function (_Feature) {
+    _inherits(Element, _Feature);
+
+    function Element(ride) {
+        var triggerType = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
+        var actionType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : -1;
+
+        _classCallCheck(this, Element);
+
+        var _this36 = _possibleConstructorReturn(this, (Element.__proto__ || Object.getPrototypeOf(Element)).call(this, ride, Feature.Types.indexOf(Element)));
+
+        _this36.triggerType = -1;
+        _this36.actionType = -1;
+
+        if (triggerType > -1 && actionType > -1) {
+            _this36.triggerType = triggerType;
+            _this36.trigger = new Element.TriggerTypes[triggerType](_this36);
+            _this36.actionType = actionType;
+            _this36.action = new Element.ActionTypes[actionType](_this36);
+        }
+        return _this36;
+    }
+
+    _createClass(Element, [{
+        key: "highlight",
+        value: function highlight(enable) {
+            if (enable) {
+                ui.mainViewport.visibilityFlags |= 1 << 7;
+                ui.tileSelection.tiles = [].concat(_toConsumableArray(this.trigger.getTiles()), _toConsumableArray(this.action.getTiles()));
+            } else {
+                ui.tileSelection.tiles = null;
+                ui.mainViewport.visibilityFlags &= ~(1 << 7);
+            }
+        }
+    }, {
+        key: "getTitle",
+        value: function getTitle() {
+            return Feature.TypeNames[this.type] + ": " + Element.TriggerTypeNames[this.triggerType] + " > " + Element.ActionTypeNames[this.actionType];
+        }
+    }, {
+        key: "isValid",
+        value: function isValid() {
+            var a = this.trigger.isValid() && this.action.isValid();
+            return a;
+        }
+    }, {
+        key: "checkCollision",
+        value: function checkCollision(carDetails) {
+            this.trigger.test(carDetails);
+        }
+    }, {
+        key: "tick",
+        value: function tick() {}
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            var data = _get(Element.prototype.__proto__ || Object.getPrototypeOf(Element.prototype), "serialize", this).call(this);
+            return _extends({}, data, {
+                triggerType: this.triggerType,
+                actionType: this.actionType,
+                trigger: this.trigger.serialize(),
+                action: this.action.serialize()
+            });
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.triggerType = data.triggerType;
+            this.actionType = data.actionType;
+
+            this.trigger = new Element.TriggerTypes[data.triggerType](this);
+            this.action = new Element.ActionTypes[data.actionType](this);
+
+            _get(Element.prototype.__proto__ || Object.getPrototypeOf(Element.prototype), "deserialize", this).call(this, data);
+
+            this.trigger.deserialize(data.trigger);
+            this.action.deserialize(data.action);
+            this.isValid();
+        }
+    }, {
+        key: "getEditWindow",
+        value: function getEditWindow(parent, onFinished) {
+            return new EditElementWindow(parent, this, onFinished);
+        }
+    }], [{
+        key: "getWizardWindow",
+        value: function getWizardWindow(ride, onComplete) {
+            return new ElementWizardWindow(ride, onComplete, Element);
+        }
+    }]);
+
+    return Element;
+}(Feature);
+
+Element.TriggerTypes = [VehicleSensor];
+
+Element.TriggerTypeNames = ["Vehicle Sensor"];
+
+Element.ActionTypes = [SwitchTrack, SetBlockBrake, SetChainLift, SetLiftSpeed, SetBrakeBoosterSpeed];
+
+Element.ActionTypeNames = ["Switch Track", "Set Block Brake", "Set Chain Lift", "Set Chain Lift Speed", "Set Brake/Booster Speed"];
+
+var EditLiftTrackWindow = function () {
+    function EditLiftTrackWindow(parent, feature, onFinished) {
+        _classCallCheck(this, EditLiftTrackWindow);
+
+        this.parent = parent;
+        this.feature = feature;
+        this.onFinished = onFinished;
+        this.locationPrompt = new LocationPrompt("loc-prompt");
+
+        this.startHeightSpinner = null;
+        this.endHeightSpinner = null;
+
+        this.window = this.createWindow();
+    }
+
+    _createClass(EditLiftTrackWindow, [{
+        key: "createWindow",
+        value: function createWindow() {
+            var that = this;
+
+            var window = new Oui.Window("advanced-track-edit-lifttrack", "Advanced Track - Edit Lift/Drop Track");
+            window._paddingBottom = 6;
+            window._paddingLeft = 6;
+            window._paddingRight = 6;
+            window.setColors(24);
+            window.setWidth(300);
+
+            window.setOnClose(function () {
+                that.feature.highlight(false);
+                that.locationPrompt.cancel();
+            });
+
+            var statusLabel = void 0;
+
+            var sensorLoc = new LocationPromptWidget("Lift Track Lock Point:", this.feature.ride.manager.locationPrompt, that.feature.startX, that.feature.startY, function (x, y) {
+                var track = MapHelper.GetTrackElement(map.getTile(x, y));
+                that.feature.startZ = -1;
+                if (track) {
+                    that.feature.startZ = track.baseZ;
+                }
+                if (that.feature.endZ == -1) {
+                    that.feature.endZ = that.feature.startZ;
+                }
+                that.startHeightSpinner.setValue(that.feature.startZ / 8);
+                that.startHeightSpinner.setValue(that.feature.endZ / 8);
+                that.feature.startX = x;
+                that.feature.startY = y;
+                that.feature.isValid();
+                statusLabel.setText(that.feature.validationMessage);
+                that.feature.affectedTiles = [];
+                that.feature.highlight(true);
+            });
+            window.addChild(sensorLoc.element);
+
+            {
+                var topicBox = new Oui.GroupBox("Height");
+
+                var row = new Oui.HorizontalBox();
+                topicBox.addChild(row);
+
+                var label = new Oui.Widgets.Label("Start:");
+                label.setRelativeWidth(15);
+                row.addChild(label);
+
+                this.startHeightSpinner = new Oui.Widgets.Spinner(this.feature.startZ / 8, 1, function (value) {
+                    that.feature.startZ = value * 8;
+                });
+                this.startHeightSpinner.setRelativeWidth(35);
+                row.addChild(this.startHeightSpinner);
+
+                label = new Oui.Widgets.Label("End:");
+                label.setRelativeWidth(15);
+                row.addChild(label);
+
+                this.endHeightSpinner = new Oui.Widgets.Spinner(this.feature.endZ / 8, 1, function (value) {
+                    that.feature.endZ = value * 8;
+                });
+                this.endHeightSpinner.setRelativeWidth(35);
+                row.addChild(this.endHeightSpinner);
+
+                window.addChild(topicBox);
+            }
+
+            {
+                var _row = new Oui.HorizontalBox();
+
+                var _label2 = new Oui.Widgets.Label("Speed (%):");
+                _label2.setWidth(60);
+                _row.addChild(_label2);
+
+                var spinner = new Oui.Widgets.Spinner(this.feature.speed, 5, function (value) {
+                    if (value < 0) {
+                        spinner.setValue(0);
+                    } else {
+                        that.feature.speed = value;
+                    }
+                });
+                _row.addChild(spinner);
+                _row.setRemainingWidthFiller(spinner);
+                _label2.setHeight(_row.getPixelHeight());
+
+                window.addChild(_row);
+            }
+
+            statusLabel = new Oui.Widgets.Label(this.feature.validationMessage);
+            window.addChild(statusLabel);
+
+            var bottom = new Oui.HorizontalBox();
+            bottom.setPadding(0, 0, 0, 0);
+            window.addChild(bottom);
+
+            var bottomFiller = new Oui.VerticalBox();
+            bottom.addChild(bottomFiller);
+            bottom.setRemainingWidthFiller(bottomFiller);
+
+            var okButton = new Oui.Widgets.Button("Ok", function () {
+                that.window._handle.close();
+                that.onFinished();
+            });
+            okButton.setWidth(50);
+            bottom.addChild(okButton);
+
+            return window;
+        }
+    }]);
+
+    return EditLiftTrackWindow;
+}();
+
+var LiftTrack = function (_Feature2) {
+    _inherits(LiftTrack, _Feature2);
+
+    function LiftTrack(ride) {
+        _classCallCheck(this, LiftTrack);
+
+        var _this37 = _possibleConstructorReturn(this, (LiftTrack.__proto__ || Object.getPrototypeOf(LiftTrack)).call(this, ride, Feature.Types.indexOf(LiftTrack)));
+
+        _this37._sensedEntityIds = [];
+
+        _this37.startX = -1;
+        _this37.startY = -1;
+        _this37.startZ = -1;
+        _this37.endZ = 128;
+
+        _this37.currentTrainEntityId = -1;
+        _this37.vehicleStartDetails = null;
+
+        _this37.vehicleState = LiftTrack.VehicleState.Empty;
+        _this37.liftState = LiftTrack.LiftState.Idle;
+
+        _this37.tickTimerCount = 0;
+
+        _this37.speed = 100;
+
+        _this37.affectedTiles = [];
+
+        _this37.validationMessage = "";
+        return _this37;
+    }
+
+    _createClass(LiftTrack, [{
+        key: "highlight",
+        value: function highlight(enable) {
+            if (enable) {
+                if (this.affectedTiles.length > 0) {
+                    ui.tileSelection.range = {
+                        leftTop: {
+                            x: this.affectedTiles[0].x * 32,
+                            y: this.affectedTiles[0].y * 32
+                        },
+                        rightBottom: {
+                            x: this.affectedTiles[this.affectedTiles.length - 1].x * 32,
+                            y: this.affectedTiles[this.affectedTiles.length - 1].y * 32
+                        }
+                    };
+                } else {
+                    ui.tileSelection.range = {
+                        leftTop: {
+                            x: this.startX * 32,
+                            y: this.startY * 32
+                        },
+                        rightBottom: {
+                            x: this.startX * 32,
+                            y: this.startY * 32
+                        }
+                    };
+                }
+            } else {
+                ui.tileSelection.range = null;
+                ui.tileSelection.tiles = null;
+            }
+        }
+    }, {
+        key: "addSensedEntity",
+        value: function addSensedEntity(id) {
+            this._sensedEntityIds.push(id);
+        }
+    }, {
+        key: "hasSensedEntity",
+        value: function hasSensedEntity(id) {
+            return this._sensedEntityIds.indexOf(id) >= 0;
+        }
+    }, {
+        key: "removeSensedEntity",
+        value: function removeSensedEntity(id) {
+            var index = this._sensedEntityIds.indexOf(id);
+            if (index > -1) {
+                this._sensedEntityIds.splice(index, 1);
+            }
+        }
+    }, {
+        key: "getTitle",
+        value: function getTitle() {
+            return Feature.TypeNames[this.type];
+        }
+    }, {
+        key: "isValid",
+        value: function isValid() {
+            if (!(this.startX >= 0 && this.startY >= 0 && this.startZ >= 0)) {
+                this.validationMessage = "Start location has not been set.";
+                return false;
+            }
+            this.validationMessage = "Lift track is ready to go.";
+            return true;
+        }
+    }, {
+        key: "onEnter",
+        value: function onEnter(carDetails) {
+            this.currentTrainEntityId = carDetails.trainId;
+
+            if (this.vehicleState == LiftTrack.VehicleState.Empty) {
+                this.vehicleStartDetails = {
+                    x: carDetails.car.x,
+                    y: carDetails.car.y,
+                    z: carDetails.car.z,
+                    velocity: carDetails.velocity
+                };
+
+                this.gatherAffectedTiles();
+
+                this.vehicleState = LiftTrack.VehicleState.Entering;
+            }
+        }
+    }, {
+        key: "onExit",
+        value: function onExit(carDetails) {
+            this.tickTimerCount = 0;
+            this.currentTrainEntityId = -1;
+            this.vehicleStartDetails = null;
+            this.vehicleState = LiftTrack.VehicleState.Empty;
+        }
+    }, {
+        key: "gatherAffectedTiles",
+        value: function gatherAffectedTiles() {
+            var lastTile = {
+                x: this.startX,
+                y: this.startY
+            };
+            var thisCar = map.getEntity(this.currentTrainEntityId);
+            while (thisCar != null) {
+                lastTile.x = Math.floor(thisCar.x / 32);
+                lastTile.y = Math.floor(thisCar.y / 32);
+
+                if (thisCar.nextCarOnTrain == null) break;
+                thisCar = map.getEntity(thisCar.nextCarOnTrain);
+            }
+
+            this.affectedTiles = [];
+
+            var minX = Math.min(this.startX, lastTile.x);
+            var minY = Math.min(this.startY, lastTile.y);
+            var maxX = Math.max(this.startX, lastTile.x);
+            var maxY = Math.max(this.startY, lastTile.y);
+            for (var i = minX; i <= maxX; i++) {
+                for (var j = minY; j <= maxY; j++) {
+                    this.affectedTiles.push({
+                        x: i,
+                        y: j
+                    });
+                }
+            }
+        }
+    }, {
+        key: "checkCollision",
+        value: function checkCollision(carDetails) {
+            var trainGoingForwards = carDetails.velocity > 0;
+            var carIsOnTile = carDetails.car.trackLocation.x == this.startX * 32 && carDetails.car.trackLocation.y == this.startY * 32;
+
+            if (carIsOnTile && !this.hasSensedEntity(carDetails.car.id)) {
+                // Train entered tile
+                this.addSensedEntity(carDetails.car.id);
+
+                if (trainGoingForwards && carDetails.isFirstCarOfTrain || !trainGoingForwards && carDetails.isLastCarOfTrain) {
+                    this.onEnter(carDetails);
+                }
+            } else if (!carIsOnTile && this.hasSensedEntity(carDetails.car.id)) {
+                // Train exited tile
+                this.removeSensedEntity(carDetails.car.id);
+
+                if (trainGoingForwards && carDetails.isLastCarOfTrain || !trainGoingForwards && carDetails.isFirstCarOfTrain) {
+                    this.onExit(carDetails);
+                }
+            }
+            return false;
+        }
+    }, {
+        key: "easeCubic",
+        value: function easeCubic(x) {
+            return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+        }
+    }, {
+        key: "easeSine",
+        value: function easeSine(x) {
+            return -(Math.cos(Math.PI * x) - 1) / 2;
+        }
+    }, {
+        key: "updatePosition",
+        value: function updatePosition(time, car, ease) {
+            time = ease(time);
+
+            var heightDifference = (this.endZ - this.startZ) * time;
+            var currentZ = this.startZ + heightDifference;
+
+            var newBaseZ = Math.round(currentZ / 8);
+
+            var heightDelta = 0;
+            for (var i = 0; i < this.affectedTiles.length; i++) {
+                var track = MapHelper.GetTrackElement(map.getTile(this.affectedTiles[i].x, this.affectedTiles[i].y));
+
+                if (track) {
+                    if (i == 0) {
+                        heightDelta = newBaseZ - track.baseHeight;
+                    }
+                    track.baseHeight += heightDelta;
+                    track.clearanceHeight += heightDelta;
+                }
+            }
+
+            if (car != null) {
+                var thisCar = car;
+                while (thisCar != null) {
+                    thisCar.z = this.vehicleStartDetails.z + heightDifference;
+                    // thisCar.z += heightDelta * 8;
+                    thisCar.trackLocation = {
+                        x: thisCar.trackLocation.x,
+                        y: thisCar.trackLocation.y,
+                        z: newBaseZ * 8,
+                        direction: thisCar.trackLocation.direction
+                    };
+
+                    if (thisCar.nextCarOnTrain == null) break;
+                    thisCar = map.getEntity(thisCar.nextCarOnTrain);
+                }
+            }
+        }
+    }, {
+        key: "tickTimerUpdate",
+        value: function tickTimerUpdate(goal) {
+            this.tickTimerCount++;
+
+            var value = Math.min(this.tickTimerCount / Math.floor(goal), 1);
+            if (value == 1) {
+                this.tickTimerCount = 0;
+                return 1;
+            }
+            return value;
+        }
+    }, {
+        key: "tick",
+        value: function tick() {
+            var car = map.getEntity(this.currentTrainEntityId);
+
+            if (this.currentTrainEntityId == -1 || car == null) {
+                this.vehicleState = LiftTrack.VehicleState.Empty;
+            }
+
+            var time = 0;
+            var easeFunc = this.easeSine;
+            switch (this.vehicleState) {
+                case LiftTrack.VehicleState.Entering:
+                    var distanceTravelled = Math.abs(this.vehicleStartDetails.x - car.x) + Math.abs(this.vehicleStartDetails.y - car.y);
+
+                    car.acceleration = 0;
+                    if (distanceTravelled > 16 || car.velocity == 0) {
+                        car.velocity = 0;
+                        this.vehicleState = LiftTrack.VehicleState.Locked;
+                    } else {
+                        car.velocity = this.vehicleStartDetails.velocity * (1 - Math.min(distanceTravelled, 16) / 32);
+                    }
+                    break;
+                case LiftTrack.VehicleState.Locked:
+                    car.velocity = 0;
+                    car.acceleration = 0;
+
+                    if (this.liftState == LiftTrack.LiftState.Idle) {
+                        if (this.tickTimerUpdate(50) == 1) {
+                            this.liftState = LiftTrack.LiftState.Traveling;
+                        }
+                    }
+                    break;
+                case LiftTrack.VehicleState.Exiting:
+                    if (car.velocity < this.vehicleStartDetails.velocity) {
+                        car.velocity += this.vehicleStartDetails.velocity / 8;
+                    } else {
+                        car.velocity = this.vehicleStartDetails.velocity;
+                    }
+                    break;
+                case LiftTrack.VehicleState.Empty:
+                    if (this.liftState == LiftTrack.LiftState.TargetReached) {
+                        if (this.tickTimerUpdate(50) == 1) {
+                            this.liftState = LiftTrack.LiftState.Returning;
+                        }
+                    }
+                    break;
+            }
+
+            switch (this.liftState) {
+                case LiftTrack.LiftState.Traveling:
+                    time = this.tickTimerUpdate(Math.abs(this.endZ - this.startZ) * (100 / this.speed));
+
+                    // More dramatic easing when going down with the train on it to indicate the weight of the train.
+                    if (this.endZ < this.startZ) {
+                        easeFunc = this.easeCubic;
+                    }
+
+                    this.updatePosition(time, car, easeFunc);
+
+                    if (time == 1) {
+                        this.liftState = LiftTrack.LiftState.TargetReached;
+                        this.vehicleState = LiftTrack.VehicleState.Exiting;
+                    }
+                    break;
+                case LiftTrack.LiftState.Returning:
+                    time = this.tickTimerUpdate(Math.abs(this.endZ - this.startZ) * (100 / this.speed));
+
+                    this.updatePosition(1 - time, car, this.easeSine);
+
+                    if (time == 1) {
+                        this.liftState = LiftTrack.LiftState.Idle;
+                    }
+                    break;
+            }
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            var data = _get(LiftTrack.prototype.__proto__ || Object.getPrototypeOf(LiftTrack.prototype), "serialize", this).call(this);
+            data.startX = this.startX;
+            data.startY = this.startY;
+            data.startZ = this.startZ;
+            data.endZ = this.endZ;
+            data.vehicleStartDetails = this.vehicleStartDetails;
+            data.currentTrainEntityId = this.currentTrainEntityId;
+            data.vehicleState = this.vehicleState;
+            data.liftState = this.liftState;
+            data.tickTimerCount = this.tickTimerCount;
+            data.affectedTiles = this.affectedTiles;
+            data.speed = this.speed;
+            return data;
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            _get(LiftTrack.prototype.__proto__ || Object.getPrototypeOf(LiftTrack.prototype), "deserialize", this).call(this, data);
+            this.startX = data.startX;
+            this.startY = data.startY;
+            this.startZ = data.startZ;
+            this.endZ = data.endZ;
+            this.vehicleStartDetails = data.vehicleStartDetails;
+            this.currentTrainEntityId = data.currentTrainEntityId;
+            this.vehicleState = data.vehicleState;
+            this.liftState = data.liftState;
+            this.tickTimerCount = data.tickTimerCount;
+            this.affectedTiles = data.affectedTiles;
+            this.speed = data.speed;
+        }
+    }, {
+        key: "getEditWindow",
+        value: function getEditWindow(parent, onFinished) {
+            return new EditLiftTrackWindow(parent, this, onFinished);
+        }
+    }]);
+
+    return LiftTrack;
+}(Feature);
+
+LiftTrack.VehicleState = {
+    Empty: 0,
+    Entering: 1,
+    Locked: 2,
+    Exiting: 3
+};
+
+LiftTrack.LiftState = {
+    Idle: 0,
+    Traveling: 1,
+    TargetReached: 2,
+    Returning: 3
+};
+
+var Ride = function () {
+    function Ride(manager) {
+        var rideId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : -1;
+
+        _classCallCheck(this, Ride);
+
+        this.manager = manager;
+
+        this.rideId = rideId;
+
+        this.features = [];
+
+        this._savedIndex = 0;
+    }
+
+    _createClass(Ride, [{
+        key: "getDisplayName",
+        value: function getDisplayName() {
+            var rideName = "Missing Ride";
+            var ride = map.getRide(this.rideId);
+            if (ride) {
+                rideName = ride.name;
+            }
+            return "[" + this.features.length + "] " + rideName;
+        }
+    }, {
+        key: "addFeature",
+        value: function addFeature(feature) {
+            this.features.push(feature);
+            this.manager.save();
+        }
+    }, {
+        key: "deleteFeature",
+        value: function deleteFeature(feature) {
+            var index = this.features.indexOf(feature);
+            if (index >= 0) {
+                this.features.splice(index, 1);
+            }
+
+            this.manager.save();
+        }
+    }, {
+        key: "hasFeature",
+        value: function hasFeature(feature) {
+            return this.features.indexOf(feature) >= 0;
+        }
+    }, {
+        key: "serialize",
+        value: function serialize() {
+            var data = {
+                rideId: this.rideId,
+                features: []
+            };
+
+            for (var i = 0; i < this.features.length; i++) {
+                this.features[i]._savedIndex = i;
+                data.features.push(this.features[i].serialize());
+            }
+
+            return data;
+        }
+    }, {
+        key: "deserialize",
+        value: function deserialize(data) {
+            this.rideId = data.rideId;
+
+            for (var i = 0; i < data.features.length; i++) {
+                var featureData = data.features[i];
+                var newFeature = new Feature.Types[featureData.type](this);
+                newFeature.deserialize(featureData);
+                newFeature._savedIndex = i;
+                this.features.push(newFeature);
+            }
+        }
+    }, {
+        key: "tick",
+        value: function tick() {
+            var ride = map.getRide(this.rideId);
+
+            if (ride == null) return;
+
+            var features = this.features;
+
+            // Double check that the ride is not a flat ride.
+            if (ride.object.carsPerFlatRide != 255) return;
+
+            var vehicles = ride.vehicles;
+            var trainIndex = 0;
+
+            var entityId = vehicles[0];
+            var firstCarOfTrain = null;
+
+            var isFirstCarOfTrain = true;
+
+            // Iterate over all the ride car.
+            while (trainIndex < vehicles.length) {
+                var vehicle = map.getEntity(entityId);
+
+                if (vehicle == null) break;
+
+                var isLastCarOfTrain = vehicle.nextCarOnTrain == null;
+
+                // Only test collisions on the first and last car of each train.
+                if (isLastCarOfTrain || isFirstCarOfTrain) {
+                    if (isFirstCarOfTrain) firstCarOfTrain = vehicle;
+
+                    var velocity = firstCarOfTrain.velocity;
+
+                    // Test the collision for al the advanced track features that are acting on this ride.
+                    for (var k = 0; k < features.length; k++) {
+                        if (!features[k].isValid()) continue;
+
+                        features[k].checkCollision({
+                            car: vehicle,
+                            velocity: velocity,
+                            isFirstCarOfTrain: isFirstCarOfTrain,
+                            isLastCarOfTrain: isLastCarOfTrain,
+                            trainId: firstCarOfTrain.id
+                        });
+                    }
+                }
+
+                // Setup for the next iteration.
+                entityId = vehicle.nextCarOnTrain;
+                isFirstCarOfTrain = false;
+                if (isLastCarOfTrain) {
+                    // If this is the last car of the train, we can assume that the next ride car will be the first car of a train.
+                    trainIndex++;
+                    entityId = vehicles[trainIndex];
+                    isFirstCarOfTrain = true;
+                }
+            }
+
+            for (var i = 0; i < this.features.length; i++) {
+                this.features[i].tick();
+            }
+        }
+    }]);
+
+    return Ride;
+}();
+
+Feature.Types = [Element, LiftTrack];
+
+Feature.TypeNames = ["Control System", "Lift/Drop Track"];
+
+var AdvancedTrackManager = function () {
+    function AdvancedTrackManager(parkData) {
+        _classCallCheck(this, AdvancedTrackManager);
+
+        this.parkData = parkData;
+        this.rides = [];
+
+        this.locationPrompt = new LocationPrompt("advanced-track-location-prompt");
+    }
+
+    _createClass(AdvancedTrackManager, [{
+        key: "addRide",
+        value: function addRide(newRide) {
+            for (var i = 0; i < this.rides.length; i++) {
+                if (this.rides[i].rideId == newRide.rideId) {
+                    return;
+                }
+            }
+            this.rides.push(newRide);
+            this.save();
+        }
+    }, {
+        key: "deleteRide",
+        value: function deleteRide(ride) {
+            var index = this.rides.indexOf(ride);
+            if (index >= 0) {
+                this.rides.splice(index, 1);
+            }
+            this.save();
+        }
+    }, {
+        key: "getOrCreateRide",
+        value: function getOrCreateRide(rideId) {
+            if (rideId == -1) {
+                console.log("Invalid ride ID -1");
+                return null;
+            }
+
+            for (var i = 0; i < this.rides.length; i++) {
+                if (this.rides[i].rideId == rideId) {
+                    return this.rides[i];
+                }
+            }
+            var newRide = new Ride(this, rideId);
+            this.rides.push(newRide);
+            this.save();
+            return newRide;
+        }
+    }, {
+        key: "save",
+        value: function save() {
+            var data = {};
+
+            data.rides = [];
+            for (var i = 0; i < this.rides.length; i++) {
+                if (this.rides[i].features.length > 0) {
+                    if (this.rides[i].rideId >= 0) {
+                        var savedIndex = data.rides.push(this.rides[i].serialize()) - 1;
+                        this.rides[i]._savedIndex = savedIndex;
+                    }
+                }
+            }
+            this.parkData.save(data);
+        }
+    }, {
+        key: "load",
+        value: function load() {
+            var data = this.parkData.load();
+            if (data == null) {
+                return; // No data to load.
+            }
+
+            for (var i = 0; i < data.rides.length; i++) {
+                var newRide = new Ride(this, data.rides[i].rideId);
+                newRide.deserialize(data.rides[i]);
+                newRide._savedIndex = i;
+                this.rides.push(newRide);
+            }
+        }
+    }, {
+        key: "tick",
+        value: function tick() {
+            for (var i = 0; i < this.rides.length; i++) {
+                this.rides[i].tick();
+            }
+        }
+    }]);
+
+    return AdvancedTrackManager;
+}();
+
+var RideWizardWindow = function () {
+    function RideWizardWindow(onComplete) {
+        _classCallCheck(this, RideWizardWindow);
+
+        this.onComplete = onComplete;
+
+        this.rideId = -1;
+
+        this.window = this.createWindow();
+    }
+
+    _createClass(RideWizardWindow, [{
+        key: "getPotentionalRides",
+        value: function getPotentionalRides() {
+            var rideNames = [];
+            var rideIndices = [];
+
+            var rides = map.rides;
+            for (var i = 0; i < rides.length; i++) {
+                if (rides[i].classification == "ride") {
+                    if (rides[i].object.carsPerFlatRide != 255) continue;
+
+                    rideNames.push(rides[i].name);
+                    rideIndices.push(rides[i].id);
+                }
+            }
+
+            return {
+                names: rideNames,
+                indices: rideIndices
+            };
+        }
+    }, {
+        key: "createWindow",
+        value: function createWindow() {
+            var that = this;
+
+            var window = new Oui.Window("advanced-track-ride-wizard", "Advanced Track - Add Ride");
+            window._paddingBottom = 6;
+            window._paddingLeft = 6;
+            window._paddingRight = 6;
+            window.setColors(26, 24);
+            window.setWidth(300);
+
+            var rides = new Oui.Widgets.Dropdown(this.getPotentionalRides().names, function (index) {
+                that.rideId = that.getPotentionalRides().indices[index];
+            });
+            window.addChild(rides);
+
+            var createButton = new Oui.Widgets.Button("Add Ride", function () {
+                that.window._handle.close();
+                that.onComplete(that.rideId);
+            });
+            window.addChild(createButton);
+
+            return window;
+        }
+    }]);
+
+    return RideWizardWindow;
+}();
+
 var AdvancedTrackWindow = function () {
     function AdvancedTrackWindow(advancedTrackManager) {
         _classCallCheck(this, AdvancedTrackWindow);
@@ -4094,10 +4998,13 @@ var AdvancedTrackWindow = function () {
         this.advancedTrackManager = advancedTrackManager;
 
         this.listView = null;
+        this.rideSelectionDropDown = null;
         this.window = this.createWindow();
 
-        this.selectedTriggerType = 0;
-        this.selectedReactionType = 0;
+        this.selectedRide = this.advancedTrackManager.rides[0];
+        this.selectedRideId = 0;
+
+        this.selectedFeatureType = 0;
         this.selectedItem = 0;
 
         this.editWindow = null;
@@ -4106,15 +5013,67 @@ var AdvancedTrackWindow = function () {
     _createClass(AdvancedTrackWindow, [{
         key: "open",
         value: function open() {
-            // Update listview.
-
-            this.listView._items = [];
-            for (var i = 0; i < this.advancedTrackManager.elements.length; i++) {
-                var element = this.advancedTrackManager.elements[i];
-                this.listView._items.push(this.getRowFromItem(element, i));
-            }
+            this.updateRideDropDown();
+            this.updateListView();
 
             this.window.open();
+        }
+    }, {
+        key: "updateListView",
+        value: function updateListView() {
+            this.listView._items = [];
+
+            if (this.selectedRide != null) {
+                for (var i = 0; i < this.selectedRide.features.length; i++) {
+                    var feature = this.selectedRide.features[i];
+                    this.listView._items.push(this.getRowFromItem(feature, i));
+                }
+            }
+
+            this.listView.requestRefresh();
+        }
+    }, {
+        key: "getAdvancedTrackRides",
+        value: function getAdvancedTrackRides() {
+            var rideNames = [];
+            var rideIndices = [];
+
+            var rides = this.advancedTrackManager.rides;
+            for (var i = 0; i < rides.length; i++) {
+                if (rides[i].rideId >= 0) {
+                    rideNames.push(rides[i].getDisplayName());
+                    rideIndices.push(rides[i].rideId);
+                }
+            }
+
+            rideNames.push("Add Ride");
+            rideIndices.push(-1);
+
+            return {
+                names: rideNames,
+                indices: rideIndices
+            };
+        }
+    }, {
+        key: "updateRideDropDown",
+        value: function updateRideDropDown() {
+            var names = this.getAdvancedTrackRides().names;
+            this.rideSelectionDropDown.setItems(names);
+
+            var selectedItem = this.getAdvancedTrackRides().indices.indexOf(this.selectedRideId);
+
+            if (selectedItem < 0) {
+                selectedItem = 0;
+            }
+
+            this.rideSelectionDropDown.setSelectedItem(selectedItem);
+
+            this.selectedRideId = this.getAdvancedTrackRides().indices[selectedItem];
+            if (this.selectedRideId < 0) {
+                this.selectedRide = null;
+            } else {
+                this.selectedRide = this.advancedTrackManager.getOrCreateRide(this.selectedRideId);
+            }
         }
     }, {
         key: "createWindow",
@@ -4122,6 +5081,8 @@ var AdvancedTrackWindow = function () {
             var that = this;
 
             var infoRight = null;
+
+            var createButton = null;
 
             var window = new Oui.Window("advanced-track-main", "Advanced Track");
             window.setColors(26, 24);
@@ -4134,36 +5095,63 @@ var AdvancedTrackWindow = function () {
             window.setHeight(250);
             window.setVerticalResize(true, 200, 600);
             window.setOnClose(function () {
+                if (that.selectedItem) {
+                    that.selectedItem.highlight(false);
+                }
+
                 infoRight.setIsDisabled(true);
             });
 
             {
-                var label = new Oui.Widgets.Label("Advanced Track allows you to affect a ride's course based on a set");
+                var label = new Oui.Widgets.Label("Setup specialized track interactions.");
+                label._marginBottom = 6;
                 window.addChild(label);
             }
-            {
-                var _label = new Oui.Widgets.Label("condition, like a train going over a specific tile. This can be used to create");
-                window.addChild(_label);
-            }
-            {
-                var _label2 = new Oui.Widgets.Label("things like transfer tracks. Or creative block brake usage.");
-                _label2._marginBottom = 8;
-                window.addChild(_label2);
-            }
+
+            this.rideSelectionDropDown = new Oui.Widgets.Dropdown(this.getAdvancedTrackRides().names, function (value) {
+                var indices = that.getAdvancedTrackRides().indices;
+
+                if (indices[value] < 0) {
+                    // new ride
+                    that.selectedRide = null;
+                    that.selectedRideId = -1;
+
+                    createButton.setIsDisabled(true);
+
+                    var rideWizardWindow = new RideWizardWindow(function (rideId) {
+                        if (rideId >= 0) {
+                            createButton.setIsDisabled(false);
+                            that.selectedRideId = rideId;
+                            that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
+
+                            that.updateRideDropDown();
+
+                            that.updateListView();
+                            that.window.open();
+                        }
+                    });
+                    that.window._handle.close();
+                    rideWizardWindow.window.open();
+
+                    that.updateListView();
+                } else {
+                    createButton.setIsDisabled(false);
+                    that.selectedRideId = indices[value];
+                    that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
+                    that.updateListView();
+                }
+            });
+            this.updateRideDropDown();
+            window.addChild(this.rideSelectionDropDown);
 
             var listView = new Oui.Widgets.ListView();
             this.listView = listView;
             listView.setCanSelect(true);
-            listView.setColumns(["ID", "Valid", "Trigger", "Action", "Ride"]);
+            listView.setColumns(["ID", "Valid", "Title"]);
             listView.getColumns()[0].setMinWidth(16);
-            listView.getColumns()[0].setRatioWidth(16);
+            listView.getColumns()[0].setMaxWidth(16);
             listView.getColumns()[1].setMinWidth(16);
-            listView.getColumns()[1].setRatioWidth(30);
-            listView.getColumns()[2].setMinWidth(42);
-            listView.getColumns()[2].setRatioWidth(60);
-            listView.getColumns()[3].setMinWidth(42);
-            listView.getColumns()[3].setRatioWidth(60);
-            listView.getColumns()[4].setRatioWidth(200);
+            listView.getColumns()[1].setMaxWidth(32);
             window.addChild(listView);
             window.setRemainingHeightFiller(listView);
 
@@ -4174,12 +5162,6 @@ var AdvancedTrackWindow = function () {
             infoBar._paddingLeft = 0;
             infoBar._paddingRight = 0;
             window.addChild(infoBar);
-
-            /*
-                    let viewport = new Oui.Widgets.ViewportWidget();
-                    viewport.setRelativeWidth(50);
-                    viewport.setRelativeHeight(100);
-                    infoBar.addChild(viewport);*/
 
             infoRight = new Oui.GroupBox("Element");
             infoRight.setRelativeHeight(100);
@@ -4192,11 +5174,19 @@ var AdvancedTrackWindow = function () {
 
             var editButton = new Oui.Widgets.Button("Edit", function () {
                 that.openEditWindow(that.selectedItem);
+                if (that.selectedItem) {
+                    that.selectedItem.highlight(true);
+                }
             });
             infoRight.addChild(editButton);
 
             var deleteButton = new Oui.Widgets.Button("Delete", function () {
-                that.advancedTrackManager.deleteElement(that.selectedItem);
+                if (that.selectedItem) {
+                    that.selectedItem.highlight(false);
+                }
+                that.selectedRide.deleteFeature(that.selectedItem);
+                that.selectedItem = null;
+
                 infoRight.setIsDisabled(true);
 
                 that.window._x = that.window._handle.x;
@@ -4210,9 +5200,12 @@ var AdvancedTrackWindow = function () {
             infoRight.setIsDisabled(true);
 
             listView.setOnClick(function (row, column) {
-                var element = that.advancedTrackManager.elements[row];
-                that.selectedItem = element;
-                //viewport.setView(element.x, element.y);
+                var feature = that.selectedRide.features[row];
+                that.selectedItem = feature;
+
+                if (that.selectedItem) {
+                    that.selectedItem.highlight(true);
+                }
                 infoRight.setIsDisabled(false);
             });
 
@@ -4220,52 +5213,53 @@ var AdvancedTrackWindow = function () {
             bottom.setPadding(0, 0, 0, 0);
             window.addChild(bottom);
 
-            var filler = new Oui.VerticalBox();
-            bottom.addChild(filler);
-            bottom.setRemainingWidthFiller(filler);
-
             {
-                var _label3 = new Oui.Widgets.Label("Trigger:");
-                _label3.setWidth(45);
+                var _label3 = new Oui.Widgets.Label("Feature:");
+                _label3.setRelativeWidth(15);
                 bottom.addChild(_label3);
             }
 
-            var elementTypes = new Oui.Widgets.Dropdown(Element$1.TriggerTypeNames, function (index) {
-                that.selectedTriggerType = index;
+            var featureTypes = new Oui.Widgets.Dropdown(Feature.TypeNames, function (index) {
+                that.selectedFeatureType = index;
             });
-            elementTypes.setWidth(100);
-            elementTypes._marginRight = 4;
-            elementTypes.setHeight(13);
-            bottom.addChild(elementTypes);
+            featureTypes._marginRight = 4;
+            featureTypes.setHeight(13);
+            bottom.addChild(featureTypes);
+            bottom.setRemainingWidthFiller(featureTypes);
 
-            {
-                var _label4 = new Oui.Widgets.Label("Action:");
-                _label4.setWidth(40);
-                bottom.addChild(_label4);
-            }
+            createButton = new Oui.Widgets.Button("Create", function () {
+                var onFeatureCreated = function onFeatureCreated(newFeature) {
+                    that.advancedTrackManager.addRide(that.selectedRide);
+                    that.selectedRide.addFeature(newFeature);
+                    that.openEditWindow(newFeature);
+                };
 
-            var elementReactionTypes = new Oui.Widgets.Dropdown(Element$1.ActionTypeNames, function (index) {
-                that.selectedReactionType = index;
+                var wizardWindow = Feature.Types[that.selectedFeatureType].getWizardWindow(that.selectedRide, onFeatureCreated);
+
+                if (wizardWindow == null) {
+                    var newFeature = new Feature.Types[that.selectedFeatureType](that.selectedRide);
+                    onFeatureCreated(newFeature);
+                } else {
+                    wizardWindow.window.open();
+                }
             });
-            elementReactionTypes.setWidth(200);
-            elementReactionTypes._marginRight = 4;
-            elementReactionTypes.setHeight(13);
-            bottom.addChild(elementReactionTypes);
-
-            var addButton = new Oui.Widgets.Button("Create New", function () {
-                var newElement = new Element$1(that.advancedTrackManager, that.selectedTriggerType, that.selectedReactionType);
-                that.openEditWindow(newElement);
-            });
-            addButton.setWidth(80);
-            addButton.setHeight(13);
-            bottom.addChild(addButton);
+            createButton.setRelativeWidth(15);
+            createButton.setHeight(13);
+            bottom.addChild(createButton);
 
             return window;
         }
     }, {
         key: "openEditWindow",
         value: function openEditWindow(item) {
-            this.editWindow = new EditElementWindow(this, item);
+            var that = this;
+
+            this.editWindow = item.getEditWindow(this, function () {
+                that.advancedTrackManager.save();
+                that.advancedTrackManager.locationPrompt.cancel();
+                that.window._openAtPosition = true;
+                that.open();
+            });
 
             this.window._x = this.window._handle.x;
             this.window._y = this.window._handle.y;
@@ -4285,7 +5279,7 @@ var AdvancedTrackWindow = function () {
     }, {
         key: "getRowFromItem",
         value: function getRowFromItem(item, i) {
-            return [i + "", item.isValid() ? "Y" : "N", Element$1.TriggerTypeNames[item.triggerType], Element$1.ActionTypeNames[item.actionType], item.getTitle()];
+            return [i + "", item.isValid() ? "Y" : "N", item.getTitle()];
         }
     }]);
 
@@ -4335,17 +5329,61 @@ var ParkData = function () {
                     if (allParksData[i].parkName == this.parkName) {
                         this.loaded = true;
                         parkData = allParksData[i].data;
-                        this.save(parkData);
 
-                        console.log("Park data has been transferred from the shared storage to the park store.");
-                        return parkData;
+                        console.log("Park data will be transferred from the shared storage to the park store.");
+                        break;
                     }
                 }
-                return null;
             } else {
                 this.loaded = true;
+            }
+
+            if (!this.loaded) {
+                // No park data for this park.
+                return null;
+            }
+
+            parkData = this.fix_1_3(parkData);
+
+            return parkData;
+        }
+    }, {
+        key: "fix_1_3",
+        value: function fix_1_3(parkData) {
+            // Group track features by ride, and the introduction of the "Feature" type.
+
+            // Check the version of the park data.
+            if (!parkData.elements) {
                 return parkData;
             }
+
+            var newParkData = {
+                rides: []
+            };
+
+            var rideIds = [];
+            var rideElements = [];
+            for (var i = 0; i < parkData.elements.length; i++) {
+                var element = parkData.elements[i];
+                var rideId = element.trigger.rideId;
+
+                var _index = rideIds.indexOf(rideId);
+                if (_index < 0) {
+                    _index = rideIds.push(rideId) - 1;
+                    rideElements.push([]);
+                }
+                element.type = Feature.Types.indexOf(Element);
+                rideElements[_index].push(element);
+            }
+
+            for (var _i6 = 0; _i6 < rideIds.length; _i6++) {
+                newParkData.rides.push({
+                    rideId: rideIds[_i6],
+                    features: rideElements[_i6]
+                });
+            }
+
+            return newParkData;
         }
     }]);
 
@@ -4355,38 +5393,53 @@ var ParkData = function () {
 // Expose the OpenRCT2 to Visual Studio Code's Intellisense
 /// <reference path="../../../bin/openrct2.d.ts" />
 
-function main() {
-    function closeWindow(classification) {
-        var window = ui.getWindow(classification);
-        if (window) {
-            window.close();
-        }
+function closeWindow(classification) {
+    var window = ui.getWindow(classification);
+    if (window) {
+        window.close();
     }
+}
 
-    var parkData = new ParkData();
-    parkData.init("Oli414.AdvancedTrack");
-    var advancedTrackManager = new AdvancedTrackManager(parkData);
-    var advancedTrackWindow = new AdvancedTrackWindow(advancedTrackManager);
-
-    ui.registerMenuItem("Advanced Track", function () {
-        advancedTrackWindow.open();
-    });
-
-    context.subscribe("interval.tick", function () {
-        advancedTrackManager.tick();
-    });
-
+function closeAll() {
     closeWindow("advanced-track-edit");
     closeWindow("advanced-track-main");
+    closeWindow("advanced-track-ride-wizard");
+    closeWindow("advanced-track-wizard-element");
+    closeWindow("advanced-track-edit-lifttrack");
+}
 
-    advancedTrackManager.load();
+function main() {
+    try {
+
+        var parkData = new ParkData();
+        parkData.init("Oli414.AdvancedTrack");
+        var advancedTrackManager = new AdvancedTrackManager(parkData);
+        var advancedTrackWindow = new AdvancedTrackWindow(advancedTrackManager);
+
+        ui.registerMenuItem("Advanced Track", function () {
+            closeAll();
+            advancedTrackWindow.open();
+        });
+
+        context.subscribe("interval.tick", function () {
+            advancedTrackManager.tick();
+        });
+
+        context.subscribe("map.save", function (e) {
+            advancedTrackManager.save();
+        });
+
+        advancedTrackManager.load();
+    } catch (exc) {
+        console.log(exc.stack);
+    }
 }
 
 registerPlugin({
     name: 'AdvancedTrack',
     version: '0.2',
     licence: "MIT",
-    targetApiVersion: 46,
+    targetApiVersion: 47,
     authors: ['Oli414'],
     type: 'local',
     main: main

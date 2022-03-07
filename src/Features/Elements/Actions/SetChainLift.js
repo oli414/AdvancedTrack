@@ -1,7 +1,7 @@
 import Action from "./Action";
-import LocationPromptWidget from "../../LocationPromptWidget";
-import Oui from "../../OliUI";
-import MapHelper from "../../MapHelper";
+import LocationPromptWidget from "../../../LocationPromptWidget";
+import Oui from "../../../OliUI";
+import MapHelper from "../../../MapHelper";
 
 class SetChainLift extends Action {
     constructor(element) {
@@ -10,6 +10,16 @@ class SetChainLift extends Action {
         this.x = -1;
         this.y = -1;
         this.chainLift = true;
+    }
+    
+    getTiles() {
+        if (this.x >= 0 && this.y >= 0) {
+            return [{
+                x: this.x * 32,
+                y: this.y * 32
+            }];
+        }
+        return [];
     }
 
     isValid() {
@@ -26,7 +36,6 @@ class SetChainLift extends Action {
     }
 
     perform() {
-        console.log("setting chainlift");
         MapHelper.SetChainLift(map.getTile(this.x, this.y), this.chainLift);
     }
 
@@ -61,11 +70,12 @@ class SetChainLift extends Action {
         this.isValid();
         let statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
-        let switchLoc = new LocationPromptWidget("Track Section:", this.element.manager.locationPrompt, this.x, this.y, (x, y) => {
+        let switchLoc = new LocationPromptWidget("Track Section:", this.element.ride.manager.locationPrompt, this.x, this.y, (x, y) => {
             this.x = x;
             this.y = y;
             this.isValid();
             statusLabel.setText(this.validationMessage);
+            this.element.highlight(true);
         });
         box.addChild(switchLoc.element);
 

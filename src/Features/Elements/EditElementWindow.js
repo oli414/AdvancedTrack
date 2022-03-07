@@ -1,10 +1,11 @@
-import Oui from "./OliUI";
-import LocationPrompt from "./LocationPrompt";
+import Oui from "../../OliUI";
+import LocationPrompt from "../../LocationPrompt";
 
 class EditElementWindow {
-    constructor(parent, element) {
+    constructor(parent, element, onFinished) {
         this.parent = parent;
         this.element = element;
+        this.onFinished = onFinished;
         this.locationPrompt = new LocationPrompt("loc-prompt");
         this.window = this.createWindow();
     }
@@ -12,7 +13,7 @@ class EditElementWindow {
     createWindow() {
         const that = this;
 
-        let window = new Oui.Window("advanced-track-edit", "Advanced Track - Edit Element");
+        let window = new Oui.Window("advanced-track-edit-element", "Advanced Track - Edit Control System");
         window._paddingBottom = 6;
         window._paddingLeft = 6;
         window._paddingRight = 6;
@@ -20,6 +21,7 @@ class EditElementWindow {
         window.setWidth(300);
 
         window.setOnClose(() => {
+            that.element.highlight(false);
             that.locationPrompt.cancel();
         });
 
@@ -50,18 +52,11 @@ class EditElementWindow {
         bottom.setRemainingWidthFiller(bottomFiller);
 
         let okButton = new Oui.Widgets.Button("Ok", () => {
-            if (!that.parent.advancedTrackManager.hasElement(that.element)) {
-                that.parent.advancedTrackManager.addElement(that.element);
-            }
-            that.parent.advancedTrackManager.save();
             that.window._handle.close();
-            that.parent.advancedTrackManager.locationPrompt.cancel();
-            that.parent.window._openAtPosition = true;
-            that.parent.open();
+            that.onFinished();
         });
         okButton.setWidth(50);
         bottom.addChild(okButton)
-
 
         return window;
     }

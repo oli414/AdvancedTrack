@@ -1,37 +1,73 @@
 import LocationPrompt from "./LocationPrompt";
-import Element from "./Elements/Element";
+import Element from "./Features/Elements/Element";
+import Feature from "./Features/Feature";
+import LiftTrack from "./Features/MovingTrack/LiftTrack";
+import Ride from "./Ride";
+
+Feature.Types = [
+    Element,
+    LiftTrack
+];
+
+Feature.TypeNames = [
+    "Control System",
+    "Lift/Drop Track"
+];
 
 class AdvancedTrackManager {
     constructor(parkData) {
         this.parkData = parkData;
-        this.elements = [];
+        this.rides = [];
 
         this.locationPrompt = new LocationPrompt("advanced-track-location-prompt");
     }
-
-    addElement(element) {
-        this.elements.push(element);
-    }
-
-    deleteElement(element) {
-        let index = this.elements.indexOf(element);
-        if (index >= 0) {
-            this.elements.splice(index, 1);
+    
+    addRide(newRide) {
+        for (let i = 0; i < this.rides.length; i++) {
+            if (this.rides[i].rideId == newRide.rideId) {
+                return;
+            }
         }
-
+        this.rides.push(newRide);
         this.save();
     }
-
-    hasElement(element) {
-        return this.elements.indexOf(element) >= 0;
+    
+    deleteRide(ride) {
+        let index = this.rides.indexOf(ride);
+        if (index >= 0) {
+            this.rides.splice(index, 1);
+        }
+        this.save();
+    }
+    
+    getOrCreateRide(rideId) {
+        if (rideId == -1) {
+            console.log("Invalid ride ID -1");
+            return null;
+        }
+        
+        for (let i = 0; i < this.rides.length; i++) {
+            if (this.rides[i].rideId == rideId) {
+                return this.rides[i];
+            }
+        }
+        let newRide = new Ride(this, rideId);
+        this.rides.push(newRide);
+        this.save();
+        return newRide;
     }
 
     save() {
         let data = {};
 
-        data.elements = [];
-        for (let i = 0; i < this.elements.length; i++) {
-            data.elements.push(this.elements[i].serialize());
+        data.rides = [];
+        for (let i = 0; i < this.rides.length; i++) {
+            if (this.rides[i].features.length > 0) {
+                if (this.rides[i].rideId >= 0) {
+                    let savedIndex = data.rides.push(this.rides[i].serialize()) - 1;
+                    this.rides[i]._savedIndex = savedIndex;
+                }
+            }
         }
         this.parkData.save(data);
     }
@@ -42,85 +78,17 @@ class AdvancedTrackManager {
             return; // No data to load.
         }
 
-        for (let i = 0; i < data.elements.length; i++) {
-            let newElement = new Element(this, data.elements[i].triggerType, data.elements[i].actionType);
-            newElement.deserialize(data.elements[i]);
-            this.elements.push(newElement);
+        for (let i = 0; i < data.rides.length; i++) {
+            let newRide = new Ride(this, data.rides[i].rideId);
+            newRide.deserialize(data.rides[i]);
+            newRide._savedIndex = i;
+            this.rides.push(newRide);
         }
     }
 
     tick() {
-        // Find the advanced track elements and group them by ride ID.
-        // Additionally create a list of all the relevant ride IDs.
-        let relevantRideIds = [];
-        let relevantElements = [];
-        for (let i = 0; i < this.elements.length; i++) {
-            let element = this.elements[i];
-            let indexOf = relevantRideIds.indexOf(element.trigger.rideId);
-            if (indexOf < 0) {
-                relevantRideIds.push(element.trigger.rideId);
-                relevantElements.push([element]);
-            }
-            else {
-                relevantElements[indexOf].push(element);
-            }
-        }
-        
-        // Iterate over the rides that are used by advanced track elements.
-        for (let i = 0; i < relevantRideIds.length; i++) {
-            let ride = map.getRide(relevantRideIds[i]);
-            let elements = relevantElements[i];
-            
-            // Double check that the ride is not a flat ride.
-            if (ride.object.carsPerFlatRide != 255)
-                continue;
-            
-            let vehicles = ride.vehicles;
-            let trainIndex = 0;
-            
-            let entityId = vehicles[0];
-            let firstCarOfTrain = null;
-            
-            let isFirstCarOfTrain = true;
-            
-            // Iterate over all the ride car.
-            while (trainIndex < vehicles.length) {
-                let vehicle = map.getEntity(entityId);
-                
-                if (vehicle == null)
-                    break;
-                
-                let isLastCarOfTrain = vehicle.nextCarOnTrain == null;
-                
-                // Only test collisions on the first and last car of each train.
-                if (isLastCarOfTrain || isFirstCarOfTrain) {
-                    if (isFirstCarOfTrain)
-                        firstCarOfTrain = vehicle;
-                    
-                    let velocity = firstCarOfTrain.velocity;
-                    
-                    // Test the collision for al the advanced track elements that are acting on this ride.
-                    for (let k = 0; k < elements.length; k++) {
-                        elements[k].test({
-                            car: vehicle, 
-                            velocity: velocity,
-                            isFirstCarOfTrain: isFirstCarOfTrain,
-                            isLastCarOfTrain: isLastCarOfTrain,
-                            trainId: firstCarOfTrain.id
-                        });
-                    }
-                }
-                
-                // Setup for the next iteration.
-                entityId = vehicle.nextCarOnTrain;
-                isFirstCarOfTrain = false;
-                if (isLastCarOfTrain) {
-                    // If this is the last car of the train, we can assume that the next ride car will be the first car of a train.
-                    trainIndex++;
-                    entityId = vehicles[trainIndex];
-                    isFirstCarOfTrain = true;
-                }
-            }
+        for (let i = 0; i < this.rides.length; i++) {
+            this.rides[i].tick();
         }
     }
 }

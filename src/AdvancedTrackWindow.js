@@ -1,37 +1,94 @@
 import Oui from "./OliUI";
-import Element from "./Elements/Element";
-import EditElementWindow from "./EditElementWindow";
+import Feature from "./Features/Feature";
+import Ride from "./Ride";
+import RideWizardWindow from "./RideWizardWindow";
 
 class AdvancedTrackWindow {
     constructor(advancedTrackManager) {
         this.advancedTrackManager = advancedTrackManager;
 
         this.listView = null;
+        this.rideSelectionDropDown = null;
         this.window = this.createWindow();
+        
+        this.selectedRide = this.advancedTrackManager.rides[0];
+        this.selectedRideId = 0;
 
-        this.selectedTriggerType = 0;
-        this.selectedReactionType = 0;
+        this.selectedFeatureType = 0;
         this.selectedItem = 0;
 
         this.editWindow = null;
     }
 
     open() {
-        // Update listview.
-
-        this.listView._items = [];
-        for (let i = 0; i < this.advancedTrackManager.elements.length; i++) {
-            let element = this.advancedTrackManager.elements[i];
-            this.listView._items.push(this.getRowFromItem(element, i));
-        }
+        this.updateRideDropDown();
+        this.updateListView();
 
         this.window.open();
+    }
+    
+    updateListView() {
+        this.listView._items = [];
+        
+        if (this.selectedRide != null) {
+            for (let i = 0; i < this.selectedRide.features.length; i++) {
+                let feature = this.selectedRide.features[i];
+                this.listView._items.push(this.getRowFromItem(feature, i));
+            }
+        }
+        
+        this.listView.requestRefresh();
+    }
+    
+    getAdvancedTrackRides() {
+        let rideNames = [];
+        let rideIndices = [];
+        
+        let rides = this.advancedTrackManager.rides;
+        for (let i = 0; i < rides.length; i++)
+        {
+            if (rides[i].rideId >= 0) {
+                rideNames.push(rides[i].getDisplayName());
+                rideIndices.push(rides[i].rideId);
+            }
+        }
+        
+        rideNames.push("Add Ride");
+        rideIndices.push(-1);
+        
+        return {
+            names: rideNames,
+            indices: rideIndices
+        }
+    }
+    
+    updateRideDropDown() {
+        let names = this.getAdvancedTrackRides().names;
+        this.rideSelectionDropDown.setItems(names);
+        
+        let selectedItem = this.getAdvancedTrackRides().indices.indexOf(this.selectedRideId);
+        
+        if (selectedItem < 0) {
+            selectedItem = 0;
+        }
+            
+        this.rideSelectionDropDown.setSelectedItem(selectedItem);
+        
+        this.selectedRideId = this.getAdvancedTrackRides().indices[selectedItem];
+        if (this.selectedRideId < 0) {
+            this.selectedRide = null;
+        }
+        else {
+            this.selectedRide = this.advancedTrackManager.getOrCreateRide(this.selectedRideId);
+        }
     }
 
     createWindow() {
         const that = this;
 
         let infoRight = null;
+        
+        let createButton = null;
 
         let window = new Oui.Window("advanced-track-main", "Advanced Track");
         window.setColors(26, 24);
@@ -44,22 +101,55 @@ class AdvancedTrackWindow {
         window.setHeight(250);
         window.setVerticalResize(true, 200, 600);
         window.setOnClose(() => {
+            if (that.selectedItem) {
+                that.selectedItem.highlight(false);
+            }
+            
             infoRight.setIsDisabled(true);
         });
 
         {
-            let label = new Oui.Widgets.Label("Advanced Track allows you to affect a ride's course based on a set");
+            let label = new Oui.Widgets.Label("Setup specialized track interactions.");
+            label._marginBottom = 6;
             window.addChild(label);
         }
-        {
-            let label = new Oui.Widgets.Label("condition, like a train going over a specific tile. This can be used to create");
-            window.addChild(label);
-        }
-        {
-            let label = new Oui.Widgets.Label("things like transfer tracks. Or creative block brake usage.");
-            label._marginBottom = 8;
-            window.addChild(label);
-        }
+        
+        this.rideSelectionDropDown = new Oui.Widgets.Dropdown(this.getAdvancedTrackRides().names, (value) => {
+            let indices = that.getAdvancedTrackRides().indices;
+            
+            if (indices[value] < 0) {
+                // new ride
+                that.selectedRide = null;
+                that.selectedRideId = -1;
+                
+                createButton.setIsDisabled(true);
+                
+                let rideWizardWindow = new RideWizardWindow((rideId) => {
+                    if (rideId >= 0) {
+                        createButton.setIsDisabled(false);
+                        that.selectedRideId = rideId;
+                        that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
+                        
+                        that.updateRideDropDown();
+                
+                        that.updateListView();
+                        that.window.open();
+                    }
+                });
+                that.window._handle.close();
+                rideWizardWindow.window.open();
+                
+                that.updateListView();
+            }
+            else {
+                createButton.setIsDisabled(false);
+                that.selectedRideId = indices[value];
+                that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
+                that.updateListView();
+            }
+        });
+        this.updateRideDropDown();
+        window.addChild(this.rideSelectionDropDown);
 
         let listView = new Oui.Widgets.ListView();
         this.listView = listView;
@@ -67,19 +157,12 @@ class AdvancedTrackWindow {
         listView.setColumns([
             "ID",
             "Valid",
-            "Trigger",
-            "Action",
-            "Ride"
+            "Title"
         ]);
         listView.getColumns()[0].setMinWidth(16);
-        listView.getColumns()[0].setRatioWidth(16);
+        listView.getColumns()[0].setMaxWidth(16);
         listView.getColumns()[1].setMinWidth(16);
-        listView.getColumns()[1].setRatioWidth(30);
-        listView.getColumns()[2].setMinWidth(42);
-        listView.getColumns()[2].setRatioWidth(60);
-        listView.getColumns()[3].setMinWidth(42);
-        listView.getColumns()[3].setRatioWidth(60);
-        listView.getColumns()[4].setRatioWidth(200);
+        listView.getColumns()[1].setMaxWidth(32);
         window.addChild(listView);
         window.setRemainingHeightFiller(listView);
 
@@ -90,13 +173,6 @@ class AdvancedTrackWindow {
         infoBar._paddingLeft = 0;
         infoBar._paddingRight = 0;
         window.addChild(infoBar);
-
-
-        /*
-                let viewport = new Oui.Widgets.ViewportWidget();
-                viewport.setRelativeWidth(50);
-                viewport.setRelativeHeight(100);
-                infoBar.addChild(viewport);*/
 
         infoRight = new Oui.GroupBox("Element");
         infoRight.setRelativeHeight(100);
@@ -109,11 +185,19 @@ class AdvancedTrackWindow {
 
         let editButton = new Oui.Widgets.Button("Edit", () => {
             that.openEditWindow(that.selectedItem);
+            if (that.selectedItem) {
+                that.selectedItem.highlight(true);
+            }
         });
         infoRight.addChild(editButton);
 
         let deleteButton = new Oui.Widgets.Button("Delete", () => {
-            that.advancedTrackManager.deleteElement(that.selectedItem);
+            if (that.selectedItem) {
+                that.selectedItem.highlight(false);
+            }
+            that.selectedRide.deleteFeature(that.selectedItem);
+            that.selectedItem = null;
+            
             infoRight.setIsDisabled(true);
 
             that.window._x = that.window._handle.x;
@@ -128,9 +212,12 @@ class AdvancedTrackWindow {
 
 
         listView.setOnClick((row, column) => {
-            let element = that.advancedTrackManager.elements[row];
-            that.selectedItem = element;
-            //viewport.setView(element.x, element.y);
+            let feature = that.selectedRide.features[row];
+            that.selectedItem = feature;
+            
+            if (that.selectedItem) {
+                that.selectedItem.highlight(true);
+            }
             infoRight.setIsDisabled(false);
         });
 
@@ -138,51 +225,53 @@ class AdvancedTrackWindow {
         bottom.setPadding(0, 0, 0, 0);
         window.addChild(bottom);
 
-        let filler = new Oui.VerticalBox();
-        bottom.addChild(filler);
-        bottom.setRemainingWidthFiller(filler);
-
         {
-            let label = new Oui.Widgets.Label("Trigger:");
-            label.setWidth(45);
+            let label = new Oui.Widgets.Label("Feature:");
+            label.setRelativeWidth(15);
             bottom.addChild(label);
         }
 
-        let elementTypes = new Oui.Widgets.Dropdown(Element.TriggerTypeNames, (index) => {
-            that.selectedTriggerType = index;
+        let featureTypes = new Oui.Widgets.Dropdown(Feature.TypeNames, (index) => {
+            that.selectedFeatureType = index;
         })
-        elementTypes.setWidth(100);
-        elementTypes._marginRight = 4;
-        elementTypes.setHeight(13);
-        bottom.addChild(elementTypes);
+        featureTypes._marginRight = 4;
+        featureTypes.setHeight(13);
+        bottom.addChild(featureTypes);
+        bottom.setRemainingWidthFiller(featureTypes);
 
-        {
-            let label = new Oui.Widgets.Label("Action:");
-            label.setWidth(40);
-            bottom.addChild(label);
-        }
-
-        let elementReactionTypes = new Oui.Widgets.Dropdown(Element.ActionTypeNames, (index) => {
-            that.selectedReactionType = index;
-        })
-        elementReactionTypes.setWidth(200);
-        elementReactionTypes._marginRight = 4;
-        elementReactionTypes.setHeight(13);
-        bottom.addChild(elementReactionTypes);
-
-        let addButton = new Oui.Widgets.Button("Create New", () => {
-            let newElement = new Element(that.advancedTrackManager, that.selectedTriggerType, that.selectedReactionType);
-            that.openEditWindow(newElement);
+        createButton = new Oui.Widgets.Button("Create", () => {
+            let onFeatureCreated = (newFeature) => {
+                that.advancedTrackManager.addRide(that.selectedRide);
+                that.selectedRide.addFeature(newFeature);
+                that.openEditWindow(newFeature);
+            };
+            
+            let wizardWindow = Feature.Types[that.selectedFeatureType].getWizardWindow(that.selectedRide, onFeatureCreated);
+            
+            if (wizardWindow == null) {
+                let newFeature = new Feature.Types[that.selectedFeatureType](that.selectedRide);
+                onFeatureCreated(newFeature);
+            }
+            else {
+                wizardWindow.window.open();
+            }
         });
-        addButton.setWidth(80);
-        addButton.setHeight(13);
-        bottom.addChild(addButton);
+        createButton.setRelativeWidth(15);
+        createButton.setHeight(13);
+        bottom.addChild(createButton);
 
         return window;
     }
 
     openEditWindow(item) {
-        this.editWindow = new EditElementWindow(this, item);
+        const that = this;
+        
+        this.editWindow = item.getEditWindow(this, () => {
+            that.advancedTrackManager.save();
+            that.advancedTrackManager.locationPrompt.cancel();
+            that.window._openAtPosition = true;
+            that.open();
+        });
 
         this.window._x = this.window._handle.x;
         this.window._y = this.window._handle.y;
@@ -204,8 +293,6 @@ class AdvancedTrackWindow {
         return [
             i + "",
             item.isValid() ? "Y" : "N",
-            Element.TriggerTypeNames[item.triggerType],
-            Element.ActionTypeNames[item.actionType],
             item.getTitle()
         ];
     }

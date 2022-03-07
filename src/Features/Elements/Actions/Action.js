@@ -1,9 +1,12 @@
-
 class Action {
     constructor(element) {
         this.element = element;
 
         this.validationMessage = "";
+    }
+    
+    getTiles() {
+        return [];
     }
 
     isValid() {

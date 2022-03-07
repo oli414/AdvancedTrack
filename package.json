@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rollup ./src/index.js --file ./build/AdvancedTrack.js && babel ./build/AdvancedTrack.js --out-file ./build/AdvancedTrack.js && cpy ./build/AdvancedTrack.js ../../plugin/ --rename=AdvancedTrack.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "npm-watch build"
+    "watch": "npm-watch"
   },
   "watch": {
     "build": "src/*"
@@ -21,7 +21,7 @@
     "babel-preset-env": "^1.7.0",
     "cpy-cli": "^3.1.1",
     "npm-watch": "^0.6.0",
-    "rollup": "^2.7.2"
-  },
-  "dependencies": {}
+    "rollup": "^2.7.2",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0"
+  }
 }

@@ -1,14 +1,13 @@
 import Trigger from "./Trigger";
-import Oui from "../../OliUI";
-import LocationPromptWidget from "../../LocationPromptWidget";
-import MapHelper from "../../MapHelper";
+import Oui from "../../../OliUI";
+import LocationPromptWidget from "../../../LocationPromptWidget";
+import MapHelper from "../../../MapHelper";
 
 class VehicleSensor extends Trigger {
     constructor(element) {
         super(element);
         this.element = element;
-
-        this.rideId = -1;
+        
         this.x = -1;
         this.y = -1;
 
@@ -16,18 +15,24 @@ class VehicleSensor extends Trigger {
 
         this._sensedEntityIds = [];
     }
+    
+    getTiles() {
+        if (this.x >= 0 && this.y >= 0) {
+            return [{
+                x: this.x * 32,
+                y: this.y * 32
+            }];
+        }
+        return [];
+    }
 
     isValid() {
         if (this.x == -1 || this.y == -1) {
             this.validationMessage = "Sensor location has not been set";
             return false;
         }
-        if (this.rideId == -1) {
-            this.validationMessage = "Sensor is not at a location with track";
-            return false;
-        }
-        if (map.getRide(this.rideId) == null) {
-            this.validationMessage = "Sensor is not at a location with track";
+        if (!MapHelper.GetTrackElement(map.getTile(this.x, this.y))) {
+            this.validationMessage = "There is no track at the set location";
             return false;
         }
         this.validationMessage = "Vehicle sensor is ready to go";
@@ -86,7 +91,6 @@ class VehicleSensor extends Trigger {
 
     serialize() {
         return {
-            rideId: this.rideId,
             x: this.x,
             y: this.y,
             method: this.method
@@ -94,7 +98,6 @@ class VehicleSensor extends Trigger {
     }
 
     deserialize(data) {
-        this.rideId = data.rideId;
         this.x = data.x;
         this.y = data.y;
 
@@ -122,18 +125,12 @@ class VehicleSensor extends Trigger {
         this.isValid();
         let statusLabel = new Oui.Widgets.Label(this.validationMessage);
 
-        let sensorLoc = new LocationPromptWidget("Vehicle Sensor:", this.element.manager.locationPrompt, this.x, this.y, (x, y) => {
-            let track = MapHelper.GetTrackElement(map.getTile(x, y));
-            if (track) {
-                this.rideId = track.ride;
-            }
-            else {
-                this.rideId = -1;
-            }
+        let sensorLoc = new LocationPromptWidget("Vehicle Sensor:", this.element.ride.manager.locationPrompt, this.x, this.y, (x, y) => {
             this.x = x;
             this.y = y;
             this.isValid();
             statusLabel.setText(this.validationMessage);
+            this.element.highlight(true);
         });
         box.addChild(sensorLoc.element);
 

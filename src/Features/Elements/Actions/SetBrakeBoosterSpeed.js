@@ -1,7 +1,7 @@
 import Action from "./Action";
-import LocationPromptWidget from "../../LocationPromptWidget";
-import Oui from "../../OliUI";
-import MapHelper from "../../MapHelper";
+import LocationPromptWidget from "../../../LocationPromptWidget";
+import Oui from "../../../OliUI";
+import MapHelper from "../../../MapHelper";
 
 class SetBrakeBoosterSpeed extends Action {
     constructor(element) {
@@ -10,6 +10,16 @@ class SetBrakeBoosterSpeed extends Action {
         this.x = -1;
         this.y = -1;
         this.speed = 1;
+    }
+    
+    getTiles() {
+        if (this.x >= 0 && this.y >= 0) {
+            return [{
+                x: this.x * 32,
+                y: this.y * 32
+            }];
+        }
+        return [];
     }
 
     isValid() {
@@ -56,7 +66,7 @@ class SetBrakeBoosterSpeed extends Action {
         this.isValid();
         let statusLabel = new Oui.Widgets.Label(this.validationMessage);
         let speedSpinner = null;
-        let switchLoc = new LocationPromptWidget("Brake/Booster:", this.element.manager.locationPrompt, this.x, this.y, (x, y) => {
+        let switchLoc = new LocationPromptWidget("Brake/Booster:", this.element.ride.manager.locationPrompt, this.x, this.y, (x, y) => {
             this.x = x;
             this.y = y;
             if (this.isValid()) {
@@ -64,6 +74,7 @@ class SetBrakeBoosterSpeed extends Action {
                 speedSpinner.setValue(this.speed);
             }
             statusLabel.setText(this.validationMessage);
+            this.element.highlight(true);
         });
         box.addChild(switchLoc.element);
 

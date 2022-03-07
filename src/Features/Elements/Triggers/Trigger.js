@@ -5,6 +5,10 @@ class Trigger {
 
         this.validationMessage = "";
     }
+    
+    getTiles() {
+        
+    }
 
     isValid() {
         return true;

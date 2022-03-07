@@ -1,5 +1,5 @@
 import Action from "./Action";
-import Oui from "../../OliUI";
+import Oui from "../../../OliUI";
 
 class SetLiftSpeed extends Action {
     constructor(element) {
@@ -7,6 +7,10 @@ class SetLiftSpeed extends Action {
 
         this.rideId = -1;
         this.chainSpeed = 1;
+    }
+    
+    getTiles() {
+        return [];
     }
 
     isValid() {
