@@ -2,6 +2,8 @@
 Advanced Track is a plugin that allows users to setup ride controllers to influence the course of the ride. In practice this allows you to create 
 dual loading stations, switching tracks, drop tracks, lifts and much more!
 
+![image](https://user-images.githubusercontent.com/2348094/157124928-154b6feb-8111-40d9-acb4-9bb3d35f8d8c.png)
+
 ## Features
 Advanced Track works by adding "track features" in the Advanced Track window, which can be found as an option under the map toolbar button.
 
