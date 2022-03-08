@@ -7,7 +7,7 @@ class Trigger {
     }
     
     getTiles() {
-        
+        return [];
     }
 
     isValid() {

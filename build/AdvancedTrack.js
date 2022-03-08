@@ -110,7 +110,9 @@ var Trigger = function () {
 
     _createClass(Trigger, [{
         key: "getTiles",
-        value: function getTiles() {}
+        value: function getTiles() {
+            return [];
+        }
     }, {
         key: "isValid",
         value: function isValid() {
@@ -3158,6 +3160,7 @@ var VehicleSensor = function (_Trigger) {
         _this24.y = -1;
 
         _this24.method = 0;
+        _this24.direction = 0;
 
         _this24._sensedEntityIds = [];
         return _this24;
@@ -3218,7 +3221,7 @@ var VehicleSensor = function (_Trigger) {
 
                 // Trigger on train entered, depending on the direction of travel check if the
                 // first or last car entered the tile.
-                if (this.method == 0 && (trainGoingForwards && carDetails.isFirstCarOfTrain || !trainGoingForwards && carDetails.isLastCarOfTrain)) {
+                if (this.method == 0 && (this.direction != 2 && trainGoingForwards && carDetails.isFirstCarOfTrain || this.direction != 1 && !trainGoingForwards && carDetails.isLastCarOfTrain)) {
                     this.element.action.perform();
                     return true;
                 }
@@ -3228,7 +3231,7 @@ var VehicleSensor = function (_Trigger) {
 
                 // Trigger on train entered, depending on the direction of travel check if the
                 // first or last car exited the tile.
-                if (this.method == 1 && (trainGoingForwards && carDetails.isLastCarOfTrain || !trainGoingForwards && carDetails.isFirstCarOfTrain)) {
+                if (this.method == 1 && (this.direction != 2 && trainGoingForwards && carDetails.isLastCarOfTrain || this.direction != 1 && !trainGoingForwards && carDetails.isFirstCarOfTrain)) {
                     this.element.action.perform();
                     return true;
                 }
@@ -3241,7 +3244,8 @@ var VehicleSensor = function (_Trigger) {
             return {
                 x: this.x,
                 y: this.y,
-                method: this.method
+                method: this.method,
+                direction: this.direction
             };
         }
     }, {
@@ -3254,6 +3258,10 @@ var VehicleSensor = function (_Trigger) {
                 this.method = data.method;
             } else {
                 this.method = 1;
+            }
+
+            if (data.direction) {
+                this.direction = data.direction;
             }
         }
     }, {
@@ -3285,20 +3293,39 @@ var VehicleSensor = function (_Trigger) {
             });
             box.addChild(sensorLoc.element);
 
-            var methodForm = new Oui.HorizontalBox();
-            methodForm.setPadding(0, 0, 0, 0);
-            box.addChild(methodForm);
+            {
+                var methodForm = new Oui.HorizontalBox();
+                methodForm.setPadding(0, 0, 0, 0);
+                box.addChild(methodForm);
 
-            var methodLabel = new Oui.Widgets.Label("Trigger when the:");
-            methodLabel.setWidth(100);
-            methodForm.addChild(methodLabel);
+                var methodLabel = new Oui.Widgets.Label("Trigger when the:");
+                methodLabel.setWidth(100);
+                methodForm.addChild(methodLabel);
 
-            var method = new Oui.Widgets.Dropdown(["Train enters the sensor", "Train exits the sensor"], function (index) {
-                _this25.method = index;
-            });
-            method.setSelectedItem(this.method);
-            methodForm.addChild(method);
-            methodForm.setRemainingWidthFiller(method);
+                var method = new Oui.Widgets.Dropdown(["Train enters the sensor", "Train exits the sensor"], function (index) {
+                    _this25.method = index;
+                });
+                method.setSelectedItem(this.method);
+                methodForm.addChild(method);
+                methodForm.setRemainingWidthFiller(method);
+            }
+
+            {
+                var directionForm = new Oui.HorizontalBox();
+                directionForm.setPadding(0, 0, 0, 0);
+                box.addChild(directionForm);
+
+                var directionLabel = new Oui.Widgets.Label("Direction:");
+                directionLabel.setWidth(100);
+                directionForm.addChild(directionLabel);
+
+                var direction = new Oui.Widgets.Dropdown(["Any direction", "Forwards", "Backwards"], function (index) {
+                    _this25.direction = index;
+                });
+                direction.setSelectedItem(this.direction);
+                directionForm.addChild(direction);
+                directionForm.setRemainingWidthFiller(direction);
+            }
 
             box.addChild(statusLabel);
 

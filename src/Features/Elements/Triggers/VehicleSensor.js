@@ -12,6 +12,7 @@ class VehicleSensor extends Trigger {
         this.y = -1;
 
         this.method = 0;
+        this.direction = 0;
 
         this._sensedEntityIds = [];
     }
@@ -65,8 +66,8 @@ class VehicleSensor extends Trigger {
             // Trigger on train entered, depending on the direction of travel check if the
             // first or last car entered the tile.
             if (this.method == 0 && 
-                ((trainGoingForwards && carDetails.isFirstCarOfTrain) || 
-                (!trainGoingForwards && carDetails.isLastCarOfTrain)))
+                ((this.direction != 2 && trainGoingForwards && carDetails.isFirstCarOfTrain) || 
+                (this.direction != 1 && !trainGoingForwards && carDetails.isLastCarOfTrain)))
             {
                 this.element.action.perform();
                 return true;
@@ -79,8 +80,8 @@ class VehicleSensor extends Trigger {
             // Trigger on train entered, depending on the direction of travel check if the
             // first or last car exited the tile.
             if (this.method == 1 && 
-                ((trainGoingForwards && carDetails.isLastCarOfTrain) || 
-                (!trainGoingForwards && carDetails.isFirstCarOfTrain)))
+                (this.direction != 2 && (trainGoingForwards && carDetails.isLastCarOfTrain) || 
+                (this.direction != 1 && !trainGoingForwards && carDetails.isFirstCarOfTrain)))
             {
                 this.element.action.perform();
                 return true;
@@ -93,7 +94,8 @@ class VehicleSensor extends Trigger {
         return {
             x: this.x,
             y: this.y,
-            method: this.method
+            method: this.method,
+            direction: this.direction
         };
     }
 
@@ -106,6 +108,10 @@ class VehicleSensor extends Trigger {
         }
         else {
             this.method = 1;
+        }
+        
+        if (data.direction) {
+            this.direction = data.direction;
         }
     }
 
@@ -134,23 +140,46 @@ class VehicleSensor extends Trigger {
         });
         box.addChild(sensorLoc.element);
 
-        let methodForm = new Oui.HorizontalBox();
-        methodForm.setPadding(0, 0, 0, 0);
-        box.addChild(methodForm);
+        {
+            let methodForm = new Oui.HorizontalBox();
+            methodForm.setPadding(0, 0, 0, 0);
+            box.addChild(methodForm);
 
-        let methodLabel = new Oui.Widgets.Label("Trigger when the:");
-        methodLabel.setWidth(100);
-        methodForm.addChild(methodLabel);
+            let methodLabel = new Oui.Widgets.Label("Trigger when the:");
+            methodLabel.setWidth(100);
+            methodForm.addChild(methodLabel);
 
-        let method = new Oui.Widgets.Dropdown([
-            "Train enters the sensor",
-            "Train exits the sensor"
-        ], (index) => {
-            this.method = index;
-        });
-        method.setSelectedItem(this.method);
-        methodForm.addChild(method);
-        methodForm.setRemainingWidthFiller(method);
+            let method = new Oui.Widgets.Dropdown([
+                "Train enters the sensor",
+                "Train exits the sensor"
+            ], (index) => {
+                this.method = index;
+            });
+            method.setSelectedItem(this.method);
+            methodForm.addChild(method);
+            methodForm.setRemainingWidthFiller(method);
+        }
+
+        {
+            let directionForm = new Oui.HorizontalBox();
+            directionForm.setPadding(0, 0, 0, 0);
+            box.addChild(directionForm);
+
+            let directionLabel = new Oui.Widgets.Label("Direction:");
+            directionLabel.setWidth(100);
+            directionForm.addChild(directionLabel);
+
+            let direction = new Oui.Widgets.Dropdown([
+                "Any direction",
+                "Forwards",
+                "Backwards"
+            ], (index) => {
+                this.direction = index;
+            });
+            direction.setSelectedItem(this.direction);
+            directionForm.addChild(direction);
+            directionForm.setRemainingWidthFiller(direction);
+        }
 
         box.addChild(statusLabel);
 
