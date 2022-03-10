@@ -55,6 +55,7 @@ registerPlugin({
     name: 'AdvancedTrack',
     version: '1.3',
     licence: "MIT",
+    minApiVersion: 47,
     targetApiVersion: 47,
     authors: ['Oli414'],
     type: 'local',
