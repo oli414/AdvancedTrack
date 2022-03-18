@@ -5000,9 +5000,11 @@ var RideWizardWindow = function () {
             window.setColors(26, 24);
             window.setWidth(300);
 
-            var rides = new Oui.Widgets.Dropdown(this.getPotentionalRides().names, function (index) {
+            var potentionalRides = this.getPotentionalRides();
+            var rides = new Oui.Widgets.Dropdown(potentionalRides.names, function (index) {
                 that.rideId = that.getPotentionalRides().indices[index];
             });
+            this.rideId = potentionalRides.indices[0];
             window.addChild(rides);
 
             var createButton = new Oui.Widgets.Button("Add Ride", function () {
@@ -5026,6 +5028,7 @@ var AdvancedTrackWindow = function () {
 
         this.listView = null;
         this.rideSelectionDropDown = null;
+        this.createButton = null;
         this.window = this.createWindow();
 
         this.selectedRide = this.advancedTrackManager.rides[0];
@@ -5044,6 +5047,12 @@ var AdvancedTrackWindow = function () {
             this.updateListView();
 
             this.window.open();
+
+            var indices = this.getAdvancedTrackRides().indices;
+            if (indices[0] < 0) {
+                this.createButton.setIsDisabled(true);
+                this.openAddRideWindow();
+            }
         }
     }, {
         key: "updateListView",
@@ -5109,8 +5118,6 @@ var AdvancedTrackWindow = function () {
 
             var infoRight = null;
 
-            var createButton = null;
-
             var window = new Oui.Window("advanced-track-main", "Advanced Track");
             window.setColors(26, 24);
             window._paddingBottom = 14;
@@ -5140,29 +5147,9 @@ var AdvancedTrackWindow = function () {
 
                 if (indices[value] < 0) {
                     // new ride
-                    that.selectedRide = null;
-                    that.selectedRideId = -1;
-
-                    createButton.setIsDisabled(true);
-
-                    var rideWizardWindow = new RideWizardWindow(function (rideId) {
-                        if (rideId >= 0) {
-                            createButton.setIsDisabled(false);
-                            that.selectedRideId = rideId;
-                            that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
-
-                            that.updateRideDropDown();
-
-                            that.updateListView();
-                            that.window.open();
-                        }
-                    });
-                    that.window._handle.close();
-                    rideWizardWindow.window.open();
-
-                    that.updateListView();
+                    that.openAddRideWindow();
                 } else {
-                    createButton.setIsDisabled(false);
+                    that.createButton.setIsDisabled(false);
                     that.selectedRideId = indices[value];
                     that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
                     that.updateListView();
@@ -5254,7 +5241,7 @@ var AdvancedTrackWindow = function () {
             bottom.addChild(featureTypes);
             bottom.setRemainingWidthFiller(featureTypes);
 
-            createButton = new Oui.Widgets.Button("Create", function () {
+            this.createButton = new Oui.Widgets.Button("Create", function () {
                 var onFeatureCreated = function onFeatureCreated(newFeature) {
                     that.advancedTrackManager.addRide(that.selectedRide);
                     that.selectedRide.addFeature(newFeature);
@@ -5270,11 +5257,38 @@ var AdvancedTrackWindow = function () {
                     wizardWindow.window.open();
                 }
             });
-            createButton.setRelativeWidth(15);
-            createButton.setHeight(13);
-            bottom.addChild(createButton);
+            this.createButton.setRelativeWidth(15);
+            this.createButton.setHeight(13);
+            bottom.addChild(this.createButton);
 
             return window;
+        }
+    }, {
+        key: "openAddRideWindow",
+        value: function openAddRideWindow() {
+            var that = this;
+            this.selectedRide = null;
+            this.selectedRideId = -1;
+
+            this.createButton.setIsDisabled(true);
+
+            var rideWizardWindow = new RideWizardWindow(function (rideId) {
+                if (rideId >= 0) {
+                    that.createButton.setIsDisabled(false);
+                    that.selectedRideId = rideId;
+                    that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
+
+                    that.updateRideDropDown();
+
+                    that.updateListView();
+                    that.open();
+                }
+            });
+
+            this.window._handle.close();
+            rideWizardWindow.window.open();
+
+            this.updateListView();
         }
     }, {
         key: "openEditWindow",
@@ -5467,7 +5481,7 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '1.3',
+    version: '1.3.1',
     licence: "MIT",
     minApiVersion: 47,
     targetApiVersion: 47,

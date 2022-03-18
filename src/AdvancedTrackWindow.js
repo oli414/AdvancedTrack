@@ -9,6 +9,7 @@ class AdvancedTrackWindow {
 
         this.listView = null;
         this.rideSelectionDropDown = null;
+        this.createButton = null;
         this.window = this.createWindow();
         
         this.selectedRide = this.advancedTrackManager.rides[0];
@@ -23,8 +24,15 @@ class AdvancedTrackWindow {
     open() {
         this.updateRideDropDown();
         this.updateListView();
-
+        
         this.window.open();
+
+        let indices = this.getAdvancedTrackRides().indices;
+        if (indices[0] < 0)
+        {
+            this.createButton.setIsDisabled(true);
+            this.openAddRideWindow();
+        }
     }
     
     updateListView() {
@@ -87,8 +95,6 @@ class AdvancedTrackWindow {
         const that = this;
 
         let infoRight = null;
-        
-        let createButton = null;
 
         let window = new Oui.Window("advanced-track-main", "Advanced Track");
         window.setColors(26, 24);
@@ -119,30 +125,10 @@ class AdvancedTrackWindow {
             
             if (indices[value] < 0) {
                 // new ride
-                that.selectedRide = null;
-                that.selectedRideId = -1;
-                
-                createButton.setIsDisabled(true);
-                
-                let rideWizardWindow = new RideWizardWindow((rideId) => {
-                    if (rideId >= 0) {
-                        createButton.setIsDisabled(false);
-                        that.selectedRideId = rideId;
-                        that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
-                        
-                        that.updateRideDropDown();
-                
-                        that.updateListView();
-                        that.window.open();
-                    }
-                });
-                that.window._handle.close();
-                rideWizardWindow.window.open();
-                
-                that.updateListView();
+                that.openAddRideWindow();
             }
             else {
-                createButton.setIsDisabled(false);
+                that.createButton.setIsDisabled(false);
                 that.selectedRideId = indices[value];
                 that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
                 that.updateListView();
@@ -239,7 +225,7 @@ class AdvancedTrackWindow {
         bottom.addChild(featureTypes);
         bottom.setRemainingWidthFiller(featureTypes);
 
-        createButton = new Oui.Widgets.Button("Create", () => {
+        this.createButton = new Oui.Widgets.Button("Create", () => {
             let onFeatureCreated = (newFeature) => {
                 that.advancedTrackManager.addRide(that.selectedRide);
                 that.selectedRide.addFeature(newFeature);
@@ -256,11 +242,37 @@ class AdvancedTrackWindow {
                 wizardWindow.window.open();
             }
         });
-        createButton.setRelativeWidth(15);
-        createButton.setHeight(13);
-        bottom.addChild(createButton);
+        this.createButton.setRelativeWidth(15);
+        this.createButton.setHeight(13);
+        bottom.addChild(this.createButton);
 
         return window;
+    }
+    
+    openAddRideWindow() {
+        let that = this;
+        this.selectedRide = null;
+        this.selectedRideId = -1;
+        
+        this.createButton.setIsDisabled(true);
+        
+        let rideWizardWindow = new RideWizardWindow((rideId) => {
+            if (rideId >= 0) {
+                that.createButton.setIsDisabled(false);
+                that.selectedRideId = rideId;
+                that.selectedRide = that.advancedTrackManager.getOrCreateRide(that.selectedRideId);
+                
+                that.updateRideDropDown();
+        
+                that.updateListView();
+                that.open();
+            }
+        });
+        
+        this.window._handle.close();
+        rideWizardWindow.window.open();
+        
+        this.updateListView();
     }
 
     openEditWindow(item) {

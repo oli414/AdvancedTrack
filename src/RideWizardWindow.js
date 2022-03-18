@@ -42,9 +42,11 @@ class RideWizardWindow {
         window.setColors(26, 24);
         window.setWidth(300);
         
-        let rides = new Oui.Widgets.Dropdown(this.getPotentionalRides().names, (index) => {
+        let potentionalRides = this.getPotentionalRides();
+        let rides = new Oui.Widgets.Dropdown(potentionalRides.names, (index) => {
             that.rideId = that.getPotentionalRides().indices[index];
         })
+        this.rideId = potentionalRides.indices[0];
         window.addChild(rides);
         
         let createButton = new Oui.Widgets.Button("Add Ride", () => {
