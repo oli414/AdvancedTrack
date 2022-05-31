@@ -9,11 +9,14 @@ class RideWizardWindow {
         this.window = this.createWindow();
     }
     
+
     getPotentionalRides() {
         let rideNames = [];
         let rideIndices = [];
         
         let rides = map.rides;
+        
+        let collectedRides = [];
         for (let i = 0; i < rides.length; i++)
         {
             if (rides[i].classification == "ride")
@@ -21,9 +24,23 @@ class RideWizardWindow {
                 if (rides[i].object.carsPerFlatRide != 255)
                     continue;
                 
-                rideNames.push(rides[i].name);
-                rideIndices.push(rides[i].id);
+                collectedRides.push({
+                    name: rides[i].name,
+                    id: rides[i].id
+                });
             }
+        }
+        
+        collectedRides.sort((a, b) => {
+            let textA = a.name.toUpperCase();
+            let textB = b.name.toUpperCase();
+            return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+        });
+        
+        for (let i = 0; i < collectedRides.length; i++)
+        {
+            rideNames.push(collectedRides[i].name);
+            rideIndices.push(collectedRides[i].id);
         }
         
         return {

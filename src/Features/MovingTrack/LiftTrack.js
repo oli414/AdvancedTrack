@@ -119,9 +119,24 @@ class LiftTrack extends Feature {
             y: this.startY
         }
         let thisCar = map.getEntity(this.currentTrainEntityId);
+        
+        let firstTile = {
+            x: this.startX,
+            y: this.startY
+        };
+        
+        let firstCar = true;
         while (thisCar != null) {
             lastTile.x = Math.floor(thisCar.x / 32);
             lastTile.y = Math.floor(thisCar.y / 32);
+            
+            if (firstCar) {
+                firstTile = {
+                    x: lastTile.x,
+                    y: lastTile.y
+                };
+                firstCar = false;
+            }
             
             if (thisCar.nextCarOnTrain == null)
                 break;
@@ -130,10 +145,10 @@ class LiftTrack extends Feature {
         
         this.affectedTiles = [];
         
-        let minX = Math.min(this.startX, lastTile.x);
-        let minY = Math.min(this.startY, lastTile.y);
-        let maxX = Math.max(this.startX, lastTile.x);
-        let maxY = Math.max(this.startY, lastTile.y);
+        let minX = Math.min(Math.min(this.startX, lastTile.x), firstTile.x);
+        let minY = Math.min(Math.min(this.startY, lastTile.y), firstTile.y);
+        let maxX = Math.max(Math.max(this.startX, lastTile.x), firstTile.x);
+        let maxY = Math.max(Math.max(this.startY, lastTile.y), firstTile.y);
         for (let i = minX; i <= maxX; i++) {
             for (let j = minY; j <= maxY; j++) {
                 this.affectedTiles.push({
@@ -263,11 +278,23 @@ class LiftTrack extends Feature {
                 }
                 break;
             case LiftTrack.VehicleState.Exiting:
-                if (car.velocity < this.vehicleStartDetails.velocity) {
-                    car.velocity += this.vehicleStartDetails.velocity / 8;
+                if (this.vehicleStartDetails.velocity >= 0)
+                {
+                    if (car.velocity < this.vehicleStartDetails.velocity) {
+                        car.velocity += this.vehicleStartDetails.velocity / 8;
+                    }
+                    else {
+                        car.velocity = this.vehicleStartDetails.velocity;
+                    }
                 }
-                else {
-                    car.velocity = this.vehicleStartDetails.velocity;
+                else
+                {
+                    if (car.velocity > this.vehicleStartDetails.velocity) {
+                        car.velocity -= -this.vehicleStartDetails.velocity / 8;
+                    }
+                    else {
+                        car.velocity = this.vehicleStartDetails.velocity;
+                    }
                 }
                 break;
             case LiftTrack.VehicleState.Empty:

@@ -4478,9 +4478,24 @@ var LiftTrack = function (_Feature2) {
                 y: this.startY
             };
             var thisCar = map.getEntity(this.currentTrainEntityId);
+
+            var firstTile = {
+                x: this.startX,
+                y: this.startY
+            };
+
+            var firstCar = true;
             while (thisCar != null) {
                 lastTile.x = Math.floor(thisCar.x / 32);
                 lastTile.y = Math.floor(thisCar.y / 32);
+
+                if (firstCar) {
+                    firstTile = {
+                        x: lastTile.x,
+                        y: lastTile.y
+                    };
+                    firstCar = false;
+                }
 
                 if (thisCar.nextCarOnTrain == null) break;
                 thisCar = map.getEntity(thisCar.nextCarOnTrain);
@@ -4488,10 +4503,10 @@ var LiftTrack = function (_Feature2) {
 
             this.affectedTiles = [];
 
-            var minX = Math.min(this.startX, lastTile.x);
-            var minY = Math.min(this.startY, lastTile.y);
-            var maxX = Math.max(this.startX, lastTile.x);
-            var maxY = Math.max(this.startY, lastTile.y);
+            var minX = Math.min(Math.min(this.startX, lastTile.x), firstTile.x);
+            var minY = Math.min(Math.min(this.startY, lastTile.y), firstTile.y);
+            var maxX = Math.max(Math.max(this.startX, lastTile.x), firstTile.x);
+            var maxY = Math.max(Math.max(this.startY, lastTile.y), firstTile.y);
             for (var i = minX; i <= maxX; i++) {
                 for (var j = minY; j <= maxY; j++) {
                     this.affectedTiles.push({
@@ -4620,10 +4635,18 @@ var LiftTrack = function (_Feature2) {
                     }
                     break;
                 case LiftTrack.VehicleState.Exiting:
-                    if (car.velocity < this.vehicleStartDetails.velocity) {
-                        car.velocity += this.vehicleStartDetails.velocity / 8;
+                    if (this.vehicleStartDetails.velocity >= 0) {
+                        if (car.velocity < this.vehicleStartDetails.velocity) {
+                            car.velocity += this.vehicleStartDetails.velocity / 8;
+                        } else {
+                            car.velocity = this.vehicleStartDetails.velocity;
+                        }
                     } else {
-                        car.velocity = this.vehicleStartDetails.velocity;
+                        if (car.velocity > this.vehicleStartDetails.velocity) {
+                            car.velocity -= -this.vehicleStartDetails.velocity / 8;
+                        } else {
+                            car.velocity = this.vehicleStartDetails.velocity;
+                        }
                     }
                     break;
                 case LiftTrack.VehicleState.Empty:
@@ -4974,13 +4997,28 @@ var RideWizardWindow = function () {
             var rideIndices = [];
 
             var rides = map.rides;
+
+            var collectedRides = [];
             for (var i = 0; i < rides.length; i++) {
                 if (rides[i].classification == "ride") {
                     if (rides[i].object.carsPerFlatRide != 255) continue;
 
-                    rideNames.push(rides[i].name);
-                    rideIndices.push(rides[i].id);
+                    collectedRides.push({
+                        name: rides[i].name,
+                        id: rides[i].id
+                    });
                 }
+            }
+
+            collectedRides.sort(function (a, b) {
+                var textA = a.name.toUpperCase();
+                var textB = b.name.toUpperCase();
+                return textA < textB ? -1 : textA > textB ? 1 : 0;
+            });
+
+            for (var _i6 = 0; _i6 < collectedRides.length; _i6++) {
+                rideNames.push(collectedRides[_i6].name);
+                rideIndices.push(collectedRides[_i6].id);
             }
 
             return {
@@ -5417,10 +5455,10 @@ var ParkData = function () {
                 rideElements[_index].push(element);
             }
 
-            for (var _i6 = 0; _i6 < rideIds.length; _i6++) {
+            for (var _i7 = 0; _i7 < rideIds.length; _i7++) {
                 newParkData.rides.push({
-                    rideId: rideIds[_i6],
-                    features: rideElements[_i6]
+                    rideId: rideIds[_i7],
+                    features: rideElements[_i7]
                 });
             }
 
@@ -5481,7 +5519,7 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '1.3.1',
+    version: '1.3.2',
     licence: "MIT",
     minApiVersion: 47,
     targetApiVersion: 47,
