@@ -347,6 +347,7 @@ class LiftTrack extends Feature {
         data.tickTimerCount = this.tickTimerCount;
         data.affectedTiles = this.affectedTiles;
         data.speed = this.speed;
+        data.sensedEntityIds = this._sensedEntityIds;
         return data; 
     }
 
@@ -363,6 +364,10 @@ class LiftTrack extends Feature {
         this.tickTimerCount = data.tickTimerCount;
         this.affectedTiles = data.affectedTiles;
         this.speed = data.speed;
+        
+        if (data.sensedEntityIds) {
+            this._sensedEntityIds = data.sensedEntityIds;
+        }
     }
     
     getEditWindow(parent, onFinished) {

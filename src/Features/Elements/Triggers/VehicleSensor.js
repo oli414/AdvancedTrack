@@ -95,7 +95,8 @@ class VehicleSensor extends Trigger {
             x: this.x,
             y: this.y,
             method: this.method,
-            direction: this.direction
+            direction: this.direction,
+            sensedEntityIds: this._sensedEntityIds
         };
     }
 
@@ -112,6 +113,10 @@ class VehicleSensor extends Trigger {
         
         if (data.direction) {
             this.direction = data.direction;
+        }
+        
+        if (data.sensedEntityIds) {
+            this._sensedEntityIds = data.sensedEntityIds;
         }
     }
 

@@ -3245,7 +3245,8 @@ var VehicleSensor = function (_Trigger) {
                 x: this.x,
                 y: this.y,
                 method: this.method,
-                direction: this.direction
+                direction: this.direction,
+                sensedEntityIds: this._sensedEntityIds
             };
         }
     }, {
@@ -3262,6 +3263,10 @@ var VehicleSensor = function (_Trigger) {
 
             if (data.direction) {
                 this.direction = data.direction;
+            }
+
+            if (data.sensedEntityIds) {
+                this._sensedEntityIds = data.sensedEntityIds;
             }
         }
     }, {
