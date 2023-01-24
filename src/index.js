@@ -53,7 +53,7 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '1.3.3',
+    version: '1.3.5',
     licence: "MIT",
     minApiVersion: 47,
     targetApiVersion: 47,
