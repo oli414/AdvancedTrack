@@ -79,7 +79,7 @@ class MapHelper {
 
     static SetFlag2(tile, elementIndex, flag, enable) {
         let data = tile.data;
-        let typeFieldIndex = 10;
+        let typeFieldIndex = 11;
         if (enable) {
             data[16 * elementIndex + typeFieldIndex] |= flag;
         }

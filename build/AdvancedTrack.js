@@ -3011,7 +3011,7 @@ var MapHelper = function () {
         key: "SetFlag2",
         value: function SetFlag2(tile, elementIndex, flag, enable) {
             var data = tile.data;
-            var typeFieldIndex = 10;
+            var typeFieldIndex = 11;
             if (enable) {
                 data[16 * elementIndex + typeFieldIndex] |= flag;
             } else {
@@ -4705,6 +4705,7 @@ var LiftTrack = function (_Feature2) {
             data.tickTimerCount = this.tickTimerCount;
             data.affectedTiles = this.affectedTiles;
             data.speed = this.speed;
+            data.sensedEntityIds = this._sensedEntityIds;
             return data;
         }
     }, {
@@ -4722,6 +4723,10 @@ var LiftTrack = function (_Feature2) {
             this.tickTimerCount = data.tickTimerCount;
             this.affectedTiles = data.affectedTiles;
             this.speed = data.speed;
+
+            if (data.sensedEntityIds) {
+                this._sensedEntityIds = data.sensedEntityIds;
+            }
         }
     }, {
         key: "getEditWindow",
