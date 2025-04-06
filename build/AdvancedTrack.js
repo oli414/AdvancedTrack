@@ -3056,6 +3056,17 @@ var MapHelper = function () {
             return null;
         }
     }, {
+        key: "GetTrackElementIndex",
+        value: function GetTrackElementIndex(tile) {
+            for (var i = 0; i < tile.numElements; i++) {
+                var element = tile.getElement(i);
+                if (element.type == "track") {
+                    return i;
+                }
+            }
+            return null;
+        }
+    }, {
         key: "SetBlockBrake",
         value: function SetBlockBrake(tile, blocked) {
             for (var i = 0; i < tile.numElements; i++) {
@@ -4580,14 +4591,25 @@ var LiftTrack = function (_Feature2) {
             if (car != null) {
                 var thisCar = car;
                 while (thisCar != null) {
-                    thisCar.z = this.vehicleStartDetails.z + heightDifference;
                     // thisCar.z += heightDelta * 8;
-                    thisCar.trackLocation = {
-                        x: thisCar.trackLocation.x,
-                        y: thisCar.trackLocation.y,
-                        z: newBaseZ * 8,
-                        direction: thisCar.trackLocation.direction
-                    };
+                    // thisCar.trackLocation = {
+                    //     x: thisCar.trackLocation.x,
+                    //     y: thisCar.trackLocation.y,
+                    //     z: newBaseZ * 8,
+                    //     direction: thisCar.trackLocation.direction
+                    // };
+                    var tile = map.getTile(Math.floor(thisCar.x / 32), Math.floor(thisCar.y / 32));
+                    if (tile == null) {
+                        break;
+                    }
+                    console.log("Got tile");
+                    var elemIndex = MapHelper.GetTrackElementIndex(tile);
+                    if (elemIndex == null) {
+                        break;
+                    }
+                    console.log("got elem index");
+                    thisCar.moveToTrack(Math.floor(thisCar.x / 32), Math.floor(thisCar.y / 32), elemIndex);
+                    thisCar.z = this.vehicleStartDetails.z + heightDifference;
 
                     if (thisCar.nextCarOnTrain == null) break;
                     thisCar = map.getEntity(thisCar.nextCarOnTrain);
@@ -5529,10 +5551,10 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '1.3.3',
+    version: '1.3.6',
     licence: "MIT",
-    minApiVersion: 47,
-    targetApiVersion: 47,
+    minApiVersion: 105,
+    targetApiVersion: 105,
     authors: ['Oli414'],
     type: 'local',
     main: main

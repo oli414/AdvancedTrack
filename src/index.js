@@ -53,10 +53,10 @@ function main() {
 
 registerPlugin({
     name: 'AdvancedTrack',
-    version: '1.3.5',
+    version: '1.3.6',
     licence: "MIT",
-    minApiVersion: 47,
-    targetApiVersion: 47,
+    minApiVersion: 105,
+    targetApiVersion: 105,
     authors: ['Oli414'],
     type: 'local',
     main: main

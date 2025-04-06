@@ -121,6 +121,16 @@ class MapHelper {
         return null;
     }
 
+    static GetTrackElementIndex(tile) {
+        for (let i = 0; i < tile.numElements; i++) {
+            let element = tile.getElement(i);
+            if (element.type == "track") {
+                return i;
+            }
+        }
+        return null;
+    }
+
     static SetBlockBrake(tile, blocked) {
         for (let i = 0; i < tile.numElements; i++) {
             let element = tile.getElement(i);

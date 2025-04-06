@@ -218,14 +218,25 @@ class LiftTrack extends Feature {
         if (car != null) {
             let thisCar = car;
             while (thisCar != null) {
-                thisCar.z = this.vehicleStartDetails.z + heightDifference;
                 // thisCar.z += heightDelta * 8;
-                thisCar.trackLocation = {
-                    x: thisCar.trackLocation.x,
-                    y: thisCar.trackLocation.y,
-                    z: newBaseZ * 8,
-                    direction: thisCar.trackLocation.direction
-                };
+                // thisCar.trackLocation = {
+                //     x: thisCar.trackLocation.x,
+                //     y: thisCar.trackLocation.y,
+                //     z: newBaseZ * 8,
+                //     direction: thisCar.trackLocation.direction
+                // };
+                let tile = map.getTile(Math.floor(thisCar.x / 32), Math.floor(thisCar.y / 32));
+                if (tile == null) {
+                    break;
+                }
+                console.log("Got tile");
+                let elemIndex = MapHelper.GetTrackElementIndex(tile);
+                if (elemIndex == null) {
+                    break;
+                }
+                console.log("got elem index");
+                thisCar.moveToTrack(Math.floor(thisCar.x / 32), Math.floor(thisCar.y / 32), elemIndex);
+                thisCar.z = this.vehicleStartDetails.z + heightDifference;
                 
                 if (thisCar.nextCarOnTrain == null)
                     break;
